@@ -1,0 +1,54 @@
+---
+title: "Webscrap do tabnet da ANS"
+output: html_notebook
+---
+
+SelectorGadget: <https://rvest.tidyverse.org/articles/articles/selectorgadget.html>
+
+Consultas $\to$ Beneficiários $\to$ UF, Região Metropolitana e Capital
+
+```{r}
+source("R/libraries.R")
+
+tabnet_ans <- "http://www.ans.gov.br/anstabnet/cgi-bin/tabnet?dados/tabnet_br.def"
+```
+
+| Variável               | Opção                             |
+|------------------------|-----------------------------------|
+| Linha:                 | Faixa etária                      |
+| Coluna:                | Sexo                              |
+| Conteúdo:              | Assistência médica                |
+| Sexo:                  | Masculino                         |
+| Faixa etária:          | Até 1 ano, 1 a 4 anos, 5 a 9 anos |
+| Faixa etária-Reajuste: | 00 a 18 anos                      |
+| Tipo de contratação:   | Individual ou Familiar            |
+| Período:               | Jun/2021                          |
+
+: Beneficiários por UFs, Regiões Metropolitanas (RM) e Capitais Assistência Médica segundo Faixa etária
+
+Fazendo a requisição:
+
+```{r}
+ano <- "tb_br_2106.dbf"
+
+data <- glue::glue("Linha=Faixa_et%E1ria&Coluna=--N%E3o-Ativa--&Incremento=Assist%EAncia_M%E9dica&Arquivos=tb_br_2106.dbf&SSexo=1&SFaixa_et%E1ria=1&SFaixa_et%E1ria=2&SFaixa_et%E1ria=3&SFaixa_et%E1ria-Reajuste=1&STipo_de_contrata%E7%E3o=1&S%C9poca_de_contrata%E7%E3o=TODAS_AS_CATEGORIAS__&SSegmenta%E7%E3o=TODAS_AS_CATEGORIAS__&SSegmenta%E7%E3o_grupo=TODAS_AS_CATEGORIAS__&SAbrg._Geogr%E1fica=TODAS_AS_CATEGORIAS__&SModalidade=TODAS_AS_CATEGORIAS__&SUF=TODAS_AS_CATEGORIAS__&SGrande_Regi%E3o=TODAS_AS_CATEGORIAS__&SCapital=TODAS_AS_CATEGORIAS__&SInterior=TODAS_AS_CATEGORIAS__&SReg._Metropolitana=TODAS_AS_CATEGORIAS__&formato=table&mostre=Mostra")
+
+site <- httr::POST(url = tabnet_ans,
+                   body = data, 
+                   timeout(20))
+```
+
+Tratando os dados:
+
+```{r}
+dados <- httr::content(site, encoding = "Latin1", as = "parsed") |> # extrair os dados da rquisição
+  rvest::html_element("table") |> # elemento desejado: dados retornados da requisição
+  rvest::html_text2() |> # extração do texto da página gerada pela requisição
+  tibble::as.tibble() 
+
+dados |>
+  tidyr::separate_rows(value, sep = "\n") |> 
+  tidyr::separate(value, c("faixa_etaria", "assistencia_medica"), "\t") |> 
+  dplyr::slice(-(1)) |> 
+  dplyr::filter(faixa_etaria != "TOTAL")
+```
