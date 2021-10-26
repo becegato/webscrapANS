@@ -3,13 +3,23 @@ title: "Webscrap do tabnet da ANS"
 output: html_notebook
 ---
 
+```{r}
+source("R/libraries.R")
+```
+
+# Ferramentas utilizadas
+
 SelectorGadget: <https://rvest.tidyverse.org/articles/articles/selectorgadget.html>
+
+SQLite Tools: <https://www.sqlite.org/download.html>
+
+SQLite Browser: <https://sqlitebrowser.org/>
+
+# Consulta teste
 
 Consultas $\to$ Beneficiários $\to$ UF, Região Metropolitana e Capital
 
 ```{r}
-source("R/libraries.R")
-
 tabnet_ans <- "http://www.ans.gov.br/anstabnet/cgi-bin/tabnet?dados/tabnet_br.def"
 ```
 
@@ -29,8 +39,10 @@ tabnet_ans <- "http://www.ans.gov.br/anstabnet/cgi-bin/tabnet?dados/tabnet_br.de
 Fazendo a requisição:
 
 ```{r}
+# mar-2000 - jun-2021
 ano <- "tb_br_2106.dbf"
 
+# Requisição encontrada por meio do console do navegador
 data <- glue::glue("Linha=Faixa_et%E1ria&Coluna=--N%E3o-Ativa--&Incremento=Assist%EAncia_M%E9dica&Arquivos=tb_br_2106.dbf&SSexo=1&SFaixa_et%E1ria=1&SFaixa_et%E1ria=2&SFaixa_et%E1ria=3&SFaixa_et%E1ria-Reajuste=1&STipo_de_contrata%E7%E3o=1&S%C9poca_de_contrata%E7%E3o=TODAS_AS_CATEGORIAS__&SSegmenta%E7%E3o=TODAS_AS_CATEGORIAS__&SSegmenta%E7%E3o_grupo=TODAS_AS_CATEGORIAS__&SAbrg._Geogr%E1fica=TODAS_AS_CATEGORIAS__&SModalidade=TODAS_AS_CATEGORIAS__&SUF=TODAS_AS_CATEGORIAS__&SGrande_Regi%E3o=TODAS_AS_CATEGORIAS__&SCapital=TODAS_AS_CATEGORIAS__&SInterior=TODAS_AS_CATEGORIAS__&SReg._Metropolitana=TODAS_AS_CATEGORIAS__&formato=table&mostre=Mostra")
 
 site <- httr::POST(url = tabnet_ans,
@@ -52,3 +64,64 @@ dados |>
   dplyr::slice(-(1)) |> 
   dplyr::filter(faixa_etaria != "TOTAL")
 ```
+
+# Criando base de tags
+
+Conteúdo de campos:
+
+```{r}
+html <- rvest::read_html("http://www.ans.gov.br/anstabnet/cgi-bin/dh?dados/tabnet_br.def")
+
+clear_export <- function(x, nome){
+  x |> 
+    rvest::html_text() |>
+    stringi::stri_trans_general(id = "Latin-ASCII") |> # Remover acentos na exportação
+    tibble::as.tibble() |>
+    tidyr::separate_rows(value, sep = "\n") |> 
+    dplyr::rename(item = value) |> 
+    dplyr::mutate(tag = "") |> 
+    dplyr::slice(-n()) |> # Remover última linha por conta do último \n nas variáveis
+    readr::write_csv(glue::glue("base/{nome}.csv"))
+}
+
+#' Tags encontradas no site do tabnet da ANS:
+#' <http://www.ans.gov.br/anstabnet/cgi-bin/dh?dados/tabnet_br.def>
+
+linha <- html |> 
+  rvest::html_element("#L") |>
+  clear_export("linha")
+
+coluna <- html |> 
+  rvest::html_element("#C") |>
+  clear_export("coluna")
+
+conteudo <- html |> 
+  rvest::html_element("#I") |>
+  clear_export("conteudo")
+
+tipo_contratacao <- html |> 
+  rvest::html_element("#S4") |>
+  clear_export("tipo_contratacao")
+
+uf <- html |> 
+  rvest::html_element("#S10") |>
+  clear_export("uf")
+```
+
+Importação de bases no SQLite:
+
+```
+sqlite3
+
+.cd "/webscrap-ans-tabnet/base"
+
+.open ans-tags.db
+
+.mode csv
+
+.import coluna.csv coluna
+```
+
+Repetir para as demais bases.
+
+Inclusão das tags feita no SQLite Browser.
