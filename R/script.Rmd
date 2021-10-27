@@ -43,7 +43,7 @@ Fazendo a requisição:
 ano <- "tb_br_2106.dbf"
 
 # Requisição encontrada por meio do console do navegador
-data <- glue::glue("Linha=Faixa_et%E1ria&Coluna=--N%E3o-Ativa--&Incremento=Assist%EAncia_M%E9dica&Arquivos=tb_br_2106.dbf&SSexo=1&SFaixa_et%E1ria=1&SFaixa_et%E1ria=2&SFaixa_et%E1ria=3&SFaixa_et%E1ria-Reajuste=1&STipo_de_contrata%E7%E3o=1&S%C9poca_de_contrata%E7%E3o=TODAS_AS_CATEGORIAS__&SSegmenta%E7%E3o=TODAS_AS_CATEGORIAS__&SSegmenta%E7%E3o_grupo=TODAS_AS_CATEGORIAS__&SAbrg._Geogr%E1fica=TODAS_AS_CATEGORIAS__&SModalidade=TODAS_AS_CATEGORIAS__&SUF=TODAS_AS_CATEGORIAS__&SGrande_Regi%E3o=TODAS_AS_CATEGORIAS__&SCapital=TODAS_AS_CATEGORIAS__&SInterior=TODAS_AS_CATEGORIAS__&SReg._Metropolitana=TODAS_AS_CATEGORIAS__&formato=table&mostre=Mostra")
+data <- glue::glue("Linha=Faixa_et%E1ria&Coluna=--N%E3o-Ativa--&Incremento=Assist%EAncia_M%E9dica&Arquivos={ano}&SSexo=1&SFaixa_et%E1ria=1&SFaixa_et%E1ria=2&SFaixa_et%E1ria=3&SFaixa_et%E1ria-Reajuste=1&STipo_de_contrata%E7%E3o=1&S%C9poca_de_contrata%E7%E3o=TODAS_AS_CATEGORIAS__&SSegmenta%E7%E3o=TODAS_AS_CATEGORIAS__&SSegmenta%E7%E3o_grupo=TODAS_AS_CATEGORIAS__&SAbrg._Geogr%E1fica=TODAS_AS_CATEGORIAS__&SModalidade=TODAS_AS_CATEGORIAS__&SUF=TODAS_AS_CATEGORIAS__&SGrande_Regi%E3o=TODAS_AS_CATEGORIAS__&SCapital=TODAS_AS_CATEGORIAS__&SInterior=TODAS_AS_CATEGORIAS__&SReg._Metropolitana=TODAS_AS_CATEGORIAS__&formato=table&mostre=Mostra")
 
 site <- httr::POST(url = tabnet_ans,
                    body = data, 
@@ -56,7 +56,7 @@ Tratando os dados:
 dados <- httr::content(site, encoding = "Latin1", as = "parsed") |> # extrair os dados da rquisição
   rvest::html_element("table") |> # elemento desejado: dados retornados da requisição
   rvest::html_text2() |> # extração do texto da página gerada pela requisição
-  tibble::as.tibble() 
+  tibble::as_tibble() 
 
 dados |>
   tidyr::separate_rows(value, sep = "\n") |> 
@@ -72,16 +72,15 @@ Conteúdo de campos:
 ```{r}
 html <- rvest::read_html("http://www.ans.gov.br/anstabnet/cgi-bin/dh?dados/tabnet_br.def")
 
-clear_export <- function(x, nome){
+clear <- function(x){
   x |> 
     rvest::html_text() |>
     stringi::stri_trans_general(id = "Latin-ASCII") |> # Remover acentos na exportação
-    tibble::as.tibble() |>
+    tibble::as_tibble() |>
     tidyr::separate_rows(value, sep = "\n") |> 
     dplyr::rename(item = value) |> 
     dplyr::mutate(tag = "") |> 
-    dplyr::slice(-n()) |> # Remover última linha por conta do último \n nas variáveis
-    readr::write_csv(glue::glue("base/{nome}.csv"))
+    dplyr::slice(-n()) # Remover última linha por conta do último \n nas variáveis
 }
 
 #' Tags encontradas no site do tabnet da ANS:
@@ -89,23 +88,33 @@ clear_export <- function(x, nome){
 
 linha <- html |> 
   rvest::html_element("#L") |>
-  clear_export("linha")
+  clear() |> 
+  dplyr::mutate(tag = c("Compet%EAncia", "Sexo", "Faixa_et%E1ria", "Faixa_et%E1ria-Reajuste", "Tipo_de_contrata%E7%E3o", "%C9poca_de_contrata%E7%E3o", "Segmenta%E7%E3o", "Segmenta%E7%E3o_grupo", "Abrg._Geogr%E1fica", "Modalidade", "UF", "Grande_Regi%E3o%2FUF", "Grande_Regi%E3o", "Capital", "Interior", "Reg._Metropolitana")) |>
+    readr::write_csv(glue::glue("base/linha.csv"))
 
 coluna <- html |> 
   rvest::html_element("#C") |>
-  clear_export("coluna")
+  clear() |> 
+  dplyr::mutate(tag = c("--N%E3o-Ativa--", "Compet%EAncia", "Sexo", "Faixa_et%E1ria", "Faixa_et%E1ria-Reajuste", "Tipo_de_contrata%E7%E3o", "%C9poca_de_contrata%E7%E3o", "Segmenta%E7%E3o", "Segmenta%E7%E3o_grupo", "Abrg._Geogr%E1fica", "Modalidade", "UF", "Grande_Regi%E3o", "Capital", "Interior", "Reg._Metropolitana")) |>
+  readr::write_csv(glue::glue("base/coluna.csv"))
 
 conteudo <- html |> 
   rvest::html_element("#I") |>
-  clear_export("conteudo")
+  clear() |> 
+  dplyr::mutate(tag = c("Assist%EAncia_M%E9dica", "Excl._Odontol%F3gico")) |>
+  readr::write_csv(glue::glue("base/conteudo.csv"))
 
 tipo_contratacao <- html |> 
   rvest::html_element("#S4") |>
-  clear_export("tipo_contratacao")
+  clear() |> 
+  dplyr::mutate(tag = c("TODAS_AS_CATEGORIAS__", "1", "2", "3", "4", "5")) |>
+  readr::write_csv(glue::glue("base/tipo_contratacao.csv"))  
 
 uf <- html |> 
   rvest::html_element("#S10") |>
-  clear_export("uf")
+  clear() |>
+  dplyr::mutate(tag = c("TODAS_AS_CATEGORIAS__", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "29", "28")) |>
+  readr::write_csv(glue::glue("base/uf.csv")) 
 ```
 
 Importação de bases no SQLite:
@@ -124,4 +133,85 @@ sqlite3
 
 Repetir para as demais bases.
 
-Inclusão das tags feita no SQLite Browser.
+# Conecção com base de dados
+
+```{r}
+database <- DBI::dbConnect(RSQLite::SQLite(), "base/ans-tags.db")
+
+dbListTables(database)
+
+database |> 
+  dplyr::tbl("coluna") # seleciona a tabela
+```
+
+Criando busca:
+
+```{r}
+busca <- function(coluna, conteudo, linha, tipo_contratacao, uf){
+  
+  database <- DBI::dbConnect(RSQLite::SQLite(), "base/ans-tags.db")
+  
+  a <- database |> 
+    dplyr::tbl("coluna") |>
+    dplyr::filter(item == coluna) |> 
+    dplyr::pull(tag)
+  
+  b <- database |> 
+    dplyr::tbl("conteudo") |>
+    dplyr::filter(item == conteudo) |> 
+    dplyr::pull(tag)
+  
+  c <- database |> 
+    dplyr::tbl("linha") |>
+    dplyr::filter(item == linha) |> 
+    dplyr::pull(tag)
+  
+  d <- database |> 
+    dplyr::tbl("tipo_contratacao") |>
+    dplyr::filter(item == tipo_contratacao) |> 
+    dplyr::pull(tag)
+  
+  e <- database |> 
+    dplyr::tbl("uf") |>
+    dplyr::filter(item == uf) |> 
+    dplyr::pull(tag)
+  
+  periodo <- "tb_br_2106.dbf"
+  
+  tabnet_ans <- "http://www.ans.gov.br/anstabnet/cgi-bin/tabnet?dados/tabnet_br.def"
+  
+  requisicao <- glue::glue("Linha={c}&Coluna={a}&Incremento={b}&Arquivos={periodo}&SSexo=TODAS_AS_CATEGORIAS__&SFaixa_et%E1ria=TODAS_AS_CATEGORIAS__&SFaixa_et%E1ria-Reajuste=TODAS_AS_CATEGORIAS__&STipo_de_contrata%E7%E3o={d}&S%C9poca_de_contrata%E7%E3o=TODAS_AS_CATEGORIAS__&SSegmenta%E7%E3o=TODAS_AS_CATEGORIAS__&SSegmenta%E7%E3o_grupo=TODAS_AS_CATEGORIAS__&SAbrg._Geogr%E1fica=TODAS_AS_CATEGORIAS__&SModalidade=TODAS_AS_CATEGORIAS__&SUF={e}&SGrande_Regi%E3o=TODAS_AS_CATEGORIAS__&SCapital=TODAS_AS_CATEGORIAS__&SInterior=TODAS_AS_CATEGORIAS__&SReg._Metropolitana=TODAS_AS_CATEGORIAS__&formato=table&mostre=Mostra")
+  
+  site <- httr::POST(url = tabnet_ans,
+                   body = requisicao, 
+                   timeout(20))
+  
+  dados <- httr::content(site, encoding = "Latin1", as = "parsed") |> # extrair os dados da requisição
+    rvest::html_element("table") |> # elemento desejado: dados retornados da requisição
+    rvest::html_text2() |> # extração do texto da página gerada pela requisição
+    tibble::as_tibble() |>
+    tidyr::separate_rows(value, sep = "\n")
+  
+  n <- 1 + dados |> 
+    dplyr::slice(1) |> 
+    dplyr::pull() |> 
+    stringr::str_count(pattern = "\t")
+
+  dados <- dados |>
+    tidyr::separate(col = value, sep = "\t", into = paste0("x", 1:n)) |> 
+    janitor::row_to_names(row_number = 1) |> 
+    dplyr::slice(-1)
+  
+  return(dados)
+}
+
+dados <- busca(coluna = "Competencia",
+               conteudo = "Assistencia Medica",
+               linha = "Sexo",
+               tipo_contratacao = "Individual ou Familiar", 
+               uf = "Sao Paulo")
+
+dados
+```
+
+
