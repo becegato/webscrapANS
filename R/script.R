@@ -45,8 +45,8 @@ dbListTables(database) # Listando variáveis
 
 dados <- busca(coluna = "Competencia",
                conteudo = "Assistencia Medica",
-               linha = "UF",
-               tipo_contratacao = "Individual ou Familiar",
+               linha = "Tipo de contratacao",
+               tipo_contratacao = "Todas as categorias",
                uf = "Todas as categorias",
                ano = "12",
                mes = "06")
@@ -56,5 +56,6 @@ dados <- busca(coluna = "Competencia",
 #' - Consultas múltiplas por meio de listas
 #' - Expansão de consultas
 #' - Catalogação automática de tags de tabelas da base de dados
+#' - Função de opção default "Todas as categorias" caso variável esteja vazia
 
 
