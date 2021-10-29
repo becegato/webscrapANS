@@ -8,6 +8,17 @@ source("R/functions.R")
 #' Tags encontradas no site do tabnet da ANS:
 #' <http://www.ans.gov.br/anstabnet/cgi-bin/dh?dados/tabnet_br.def>
 
+html <- rvest::read_html("http://www.ans.gov.br/anstabnet/cgi-bin/dh?dados/tabnet_br.def")
+
+# match de tags
+
+html |>
+  rvest::html_elements("#L") |>
+  paste0() |>
+  stringr::str_extract_all(stringr::regex('value=\\"(.*?)\"')) |>
+  paste0() |>
+  stringr::str_extract(stringr::regex(""))
+
 linha <- html |>
   rvest::html_element("#L") |>
   clear() |>
@@ -57,5 +68,3 @@ dados <- busca(coluna = "Competencia",
 #' - Expansão de consultas
 #' - Catalogação automática de tags de tabelas da base de dados
 #' - Função de opção default "Todas as categorias" caso variável esteja vazia
-
-

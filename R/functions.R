@@ -16,7 +16,7 @@ clear <- function(x){
 # requisição --------------------------------------------------------------
 
 #' Essa função serve para fazer as requisições para o tabnet
-#'
+
 busca <- function(coluna, conteudo, linha, tipo_contratacao, uf, ano, mes){
 
   database <- DBI::dbConnect(RSQLite::SQLite(), "base/ans-tags.db") # Conexão com a base de dados
@@ -62,8 +62,8 @@ busca <- function(coluna, conteudo, linha, tipo_contratacao, uf, ano, mes){
                      body = requisicao,
                      timeout(20))
 
-  dados <- httr::content(site, encoding = "Latin1", as = "parsed") |> # extrair os dados da requisição
-    rvest::html_element("table") |> # elemento desejado: dados retornados da requisição
+  dados <- httr::content(site, encoding = "latin1", as = "parsed") |> # extrair os dados da requisição
+    rvest::html_node("table") |>
     rvest::html_text2() |> # extração do texto da página gerada pela requisição
     tibble::as_tibble() |>
     tidyr::separate_rows(value, sep = "\n")
