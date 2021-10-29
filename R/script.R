@@ -8,22 +8,27 @@ source("R/functions.R")
 #' Tags encontradas no site do tabnet da ANS:
 #' <http://www.ans.gov.br/anstabnet/cgi-bin/dh?dados/tabnet_br.def>
 
-html <- rvest::read_html("http://www.ans.gov.br/anstabnet/cgi-bin/dh?dados/tabnet_br.def")
+# https://stackoverflow.com/questions/32833894/r-rvest-is-not-proper-utf-8-indicate-encoding
+
+html <- rvest::read_html(iconv("http://www.ans.gov.br/anstabnet/cgi-bin/dh?dados/tabnet_br.def", to = "UTF-8"), encoding = "UTF-8")
 
 # match de tags
 
 html |>
   rvest::html_elements("#L") |>
   paste0() |>
-  stringr::str_extract_all(stringr::regex('value=\\"(.*?)\"')) |>
-  paste0() |>
-  stringr::str_extract(stringr::regex(""))
+  stringr::str_extract_all(regex('value=\"(.*?)\"')) |>
+  purrr::map_df(as_tibble, "x") |>
+  purrr::map_df(stringr::str_replace_all,
+                regex('value=\\\"'), "") |>
+  purrr::map_df(stringr::str_replace_all,
+                regex('\\\"'), "")
 
 linha <- html |>
   rvest::html_element("#L") |>
   clear() |>
   dplyr::mutate(tag = c("Compet%EAncia", "Sexo", "Faixa_et%E1ria", "Faixa_et%E1ria-Reajuste", "Tipo_de_contrata%E7%E3o", "%C9poca_de_contrata%E7%E3o", "Segmenta%E7%E3o", "Segmenta%E7%E3o_grupo", "Abrg._Geogr%E1fica", "Modalidade", "UF", "Grande_Regi%E3o%2FUF", "Grande_Regi%E3o", "Capital", "Interior", "Reg._Metropolitana")) |>
-    readr::write_csv(glue::glue("base/linha.csv"))
+  readr::write_csv(glue::glue("base/linha.csv"))
 
 coluna <- html |>
   rvest::html_element("#C") |>
@@ -66,5 +71,5 @@ dados <- busca(coluna = "Competencia",
 #'
 #' - Consultas múltiplas por meio de listas
 #' - Expansão de consultas
-#' - Catalogação automática de tags de tabelas da base de dados
+#' - Catalogação automática de tags de tabelas da base de dados - feito
 #' - Função de opção default "Todas as categorias" caso variável esteja vazia
