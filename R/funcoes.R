@@ -1,3 +1,10 @@
+# importação na base ------------------------------------------------------
+
+writedb <- function (x, name) dbWriteTable(conn = database,
+                                           name = glue::glue("{name}"),
+                                           value = x,
+                                           overwrite = T)
+
 # limpeza de tabelas ------------------------------------------------------
 
 #' Essa função serve para limpar os dados antes de importar para a base de dados do SQLite. Necessita incluir função de inclusão automática de tags.
@@ -19,9 +26,11 @@ clear <- function(x){
 
 busca <- function(coluna, conteudo, linha, tipo_contratacao, uf, ano, mes){
 
-  database <- DBI::dbConnect(RSQLite::SQLite(), "base/ans-tags.db") # Conexão com a base de dados "~/ans-tags.db"
+  database <- DBI::dbConnect(RSQLite::SQLite(), "~/ans-tags.db") # Conexão com a base de dados "~/ans-tags.db"
 
   # As variáveis de "a" a "e" servem como auxiliares para puxar os valores selecionados para consultas.
+
+  # Consultas múltiplas: conteúdo, tipo de contratação e UF
 
   a <- database |>
     dplyr::tbl("coluna") |>
@@ -37,6 +46,8 @@ busca <- function(coluna, conteudo, linha, tipo_contratacao, uf, ano, mes){
     dplyr::tbl("linha") |>
     dplyr::filter(item == linha) |>
     dplyr::pull(tag)
+
+  # requisições com múltiplos parâmetros
 
   d <- database |>
     dplyr::tbl("tipo_contratacao") |>
@@ -76,7 +87,13 @@ busca <- function(coluna, conteudo, linha, tipo_contratacao, uf, ano, mes){
   dados <- dados |>
     tidyr::separate(col = value, sep = "\t", into = paste0("x", 1:n)) |>
     janitor::row_to_names(row_number = 1) |>
-    dplyr::slice(-1)
+    dplyr::slice(-1) |>
+    dplyr::select(-Total) |>
+    purrr::map_df(stringr::str_replace_all, "\\.", "") |> # remover pontos das observações
+    mutate(across(
+      2:ncol(dados),
+      as.numeric
+    )) # mudar observações de caracteres para valores numéricos
 
   return(dados)
 }

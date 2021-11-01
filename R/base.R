@@ -3,14 +3,16 @@
 source("R/bibliotecas.R")
 source("R/funcoes.R")
 
-# construindo base de dados -----------------------------------------------
+# url do site -------------------------------------------------------------
+
+html <- rvest::read_html("http://www.ans.gov.br/anstabnet/cgi-bin/dh?dados/tabnet_br.def")
+
+# teste de inclusão automática de strings ---------------------------------
 
 #' Tags encontradas no site do tabnet da ANS:
 #' <http://www.ans.gov.br/anstabnet/cgi-bin/dh?dados/tabnet_br.def>
 
 # https://stackoverflow.com/questions/32833894/r-rvest-is-not-proper-utf-8-indicate-encoding
-
-html <- rvest::read_html("http://www.ans.gov.br/anstabnet/cgi-bin/dh?dados/tabnet_br.def")
 
 # match de tags
 
@@ -24,34 +26,63 @@ html |>
   purrr::map_df(stringr::str_replace_all,
                 regex('\\\"'), "")
 
-linha <- html |>
+# construindo base de dados -----------------------------------------------
+
+# criando base sqlite
+
+database <- DBI::dbConnect(RSQLite::SQLite(), "~/ans-tags.db") # "base/ans-tags.db"
+
+# linha
+
+html |>
   rvest::html_element("#L") |>
   clear() |>
-  dplyr::mutate(tag = c("Compet%EAncia", "Sexo", "Faixa_et%E1ria", "Faixa_et%E1ria-Reajuste", "Tipo_de_contrata%E7%E3o", "%C9poca_de_contrata%E7%E3o", "Segmenta%E7%E3o", "Segmenta%E7%E3o_grupo", "Abrg._Geogr%E1fica", "Modalidade", "UF", "Grande_Regi%E3o%2FUF", "Grande_Regi%E3o", "Capital", "Interior", "Reg._Metropolitana")) |>
-  readr::write_csv(glue::glue("base/linha.csv"))
+  dplyr::mutate(
+    x = "Linha=",
+    tag = c("Compet%EAncia", "Sexo", "Faixa_et%E1ria", "Faixa_et%E1ria-Reajuste", "Tipo_de_contrata%E7%E3o", "%C9poca_de_contrata%E7%E3o", "Segmenta%E7%E3o", "Segmenta%E7%E3o_grupo", "Abrg._Geogr%E1fica", "Modalidade", "UF", "Grande_Regi%E3o%2FUF", "Grande_Regi%E3o", "Capital", "Interior", "Reg._Metropolitana"),
+    y = "&") |>
+  tidyr::unite("tag", c(x, tag, y), sep = "") |>
+  writedb("linha")
 
-coluna <- html |>
+# coluna
+
+html |>
   rvest::html_element("#C") |>
   clear() |>
-  dplyr::mutate(tag = c("--N%E3o-Ativa--", "Compet%EAncia", "Sexo", "Faixa_et%E1ria", "Faixa_et%E1ria-Reajuste", "Tipo_de_contrata%E7%E3o", "%C9poca_de_contrata%E7%E3o", "Segmenta%E7%E3o", "Segmenta%E7%E3o_grupo", "Abrg._Geogr%E1fica", "Modalidade", "UF", "Grande_Regi%E3o", "Capital", "Interior", "Reg._Metropolitana")) |>
-  readr::write_csv(glue::glue("base/coluna.csv"))
+  dplyr::mutate(
+    x = "Coluna=",
+    tag = c("--N%E3o-Ativa--", "Compet%EAncia", "Sexo", "Faixa_et%E1ria", "Faixa_et%E1ria-Reajuste", "Tipo_de_contrata%E7%E3o", "%C9poca_de_contrata%E7%E3o", "Segmenta%E7%E3o", "Segmenta%E7%E3o_grupo", "Abrg._Geogr%E1fica", "Modalidade", "UF", "Grande_Regi%E3o", "Capital", "Interior", "Reg._Metropolitana"),
+    y = "&") |>
+  writedb("coluna")
 
-conteudo <- html |>
+# conteudo
+
+html |>
   rvest::html_element("#I") |>
   clear() |>
-  dplyr::mutate(tag = c("Assist%EAncia_M%E9dica", "Excl._Odontol%F3gico")) |>
-  readr::write_csv(glue::glue("base/conteudo.csv"))
+  dplyr::mutate(
+    x = "Incremento=",
+    tag = c("Assist%EAncia_M%E9dica", "Excl._Odontol%F3gico"),
+    y = "&") |>
+  writedb("conteudo")
 
-tipo_contratacao <- html |>
+# tipo_contratacao
+
+html |>
   rvest::html_element("#S4") |>
   clear() |>
-  dplyr::mutate(tag = c("TODAS_AS_CATEGORIAS__", "1", "2", "3", "4", "5")) |>
-  readr::write_csv(glue::glue("base/tipo_contratacao.csv"))
+  dplyr::mutate(x = "STipo_de_contrata%E7%E3o=",
+                tag = c("TODAS_AS_CATEGORIAS__", "1", "2", "3", "4", "5"),
+                y = "&") |>
+  writedb("tipo_contratacao")
 
-uf <- html |>
+# uf
+
+html |>
   rvest::html_element("#S10") |>
   clear() |>
-  dplyr::mutate(tag = c("TODAS_AS_CATEGORIAS__", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "29", "28")) |>
-  readr::write_csv(glue::glue("base/uf.csv"))
-
-# Importar planilhas na base SQLite "ans-tags.db"
+  dplyr::mutate(x = "SUF=",
+                tag = c("TODAS_AS_CATEGORIAS__", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "29", "28"),
+                y = "&") |>
+  tidyr::unite("tag", c(x, tag, y), sep = "") |>
+  writedb("uf")
