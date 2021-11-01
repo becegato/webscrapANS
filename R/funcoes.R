@@ -19,7 +19,7 @@ clear <- function(x){
 
 busca <- function(coluna, conteudo, linha, tipo_contratacao, uf, ano, mes){
 
-  database <- DBI::dbConnect(RSQLite::SQLite(), "base/ans-tags.db") # Conexão com a base de dados
+  database <- DBI::dbConnect(RSQLite::SQLite(), "base/ans-tags.db") # Conexão com a base de dados "~/ans-tags.db"
 
   # As variáveis de "a" a "e" servem como auxiliares para puxar os valores selecionados para consultas.
 

@@ -1,7 +1,7 @@
 # bibliotecas e funções ---------------------------------------------------
 
-source("R/libraries.R")
-source("R/functions.R")
+source("R/bibliotecas.R")
+source("R/funcoes.R")
 
 # construindo base de dados -----------------------------------------------
 
@@ -10,7 +10,7 @@ source("R/functions.R")
 
 # https://stackoverflow.com/questions/32833894/r-rvest-is-not-proper-utf-8-indicate-encoding
 
-html <- rvest::read_html(iconv("http://www.ans.gov.br/anstabnet/cgi-bin/dh?dados/tabnet_br.def", to = "UTF-8"), encoding = "UTF-8")
+html <- rvest::read_html("http://www.ans.gov.br/anstabnet/cgi-bin/dh?dados/tabnet_br.def")
 
 # match de tags
 
@@ -55,21 +55,3 @@ uf <- html |>
   readr::write_csv(glue::glue("base/uf.csv"))
 
 # Importar planilhas na base SQLite "ans-tags.db"
-
-# query -------------------------------------------------------------------
-dbListTables(database) # Listando variáveis
-
-dados <- busca(coluna = "Competencia",
-               conteudo = "Assistencia Medica",
-               linha = "Tipo de contratacao",
-               tipo_contratacao = "Todas as categorias",
-               uf = "Todas as categorias",
-               ano = "12",
-               mes = "06")
-
-#' Próximos passos:
-#'
-#' - Consultas múltiplas por meio de listas
-#' - Expansão de consultas
-#' - Catalogação automática de tags de tabelas da base de dados - feito
-#' - Função de opção default "Todas as categorias" caso variável esteja vazia
