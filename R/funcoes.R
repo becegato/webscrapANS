@@ -1,13 +1,40 @@
 # importação na base ------------------------------------------------------
 
-writedb <- function (x, name) dbWriteTable(conn = database,
-                                           name = glue::glue("{name}"),
-                                           value = x,
-                                           overwrite = T)
+writedb <- function(x, name){
+
+  x <- x |> tidyr::unite("tag", c(x, tag, y), sep = "")
+
+  RSQLite::dbWriteTable(conn = database,
+                        name = glue::glue("{name}"),
+                        value = x,
+                        overwrite = T)
+}
+
+
+
+# função com suporte a múltiplas consultas --------------------------------
+
+query <- function(x, name){
+
+  database <- DBI::dbConnect(RSQLite::SQLite(), "base/ans-tags.db") # Conexão com a base de dados "~/ans-tags.db"
+
+  y <- x |>
+    dplyr::as_tibble() |>
+    dplyr::rename(item = value) |>
+    dplyr::left_join(database |>
+                dplyr::tbl(paste0(name)) |>
+                             dplyr::collect(),
+                           by = "item") |>
+    dplyr::select(tag) |>
+    purrr::flatten_chr() |>
+    stringr::str_flatten()
+
+  return(y)
+}
 
 # limpeza de tabelas ------------------------------------------------------
 
-#' Essa função serve para limpar os dados antes de importar para a base de dados do SQLite. Necessita incluir função de inclusão automática de tags.
+#' Essa função serve para limpar os dados antes de importar para a base de dados do SQLite.
 
 clear <- function(x){
   x |>
@@ -20,44 +47,29 @@ clear <- function(x){
     dplyr::slice(-n()) # Remover última linha por conta do último \n nas variáveis
 }
 
-# requisição --------------------------------------------------------------
 
-#' Essa função serve para fazer as requisições para o tabnet
+# requisições do tabnet ---------------------------------------------------
 
-busca <- function(coluna, conteudo, linha, tipo_contratacao, uf, ano, mes){
+busca <- function(coluna, conteudo, linha, tipo_contratacao, uf, periodo){
 
-  database <- DBI::dbConnect(RSQLite::SQLite(), "~/ans-tags.db") # Conexão com a base de dados "~/ans-tags.db"
+  database <- DBI::dbConnect(RSQLite::SQLite(), "base/ans-tags.db") # Conexão com a base de dados "~/ans-tags.db"
 
   # As variáveis de "a" a "e" servem como auxiliares para puxar os valores selecionados para consultas.
 
-  # Consultas múltiplas: conteúdo, tipo de contratação e UF
+  a <- coluna |>
+    query("coluna")
 
-  a <- database |>
-    dplyr::tbl("coluna") |>
-    dplyr::filter(item == coluna) |>
-    dplyr::pull(tag)
+  b <- conteudo |>
+    query("conteudo")
 
-  b <- database |>
-    dplyr::tbl("conteudo") |>
-    dplyr::filter(item == conteudo) |>
-    dplyr::pull(tag)
+  c <- linha |>
+    query("linha")
 
-  c <- database |>
-    dplyr::tbl("linha") |>
-    dplyr::filter(item == linha) |>
-    dplyr::pull(tag)
+  d <- tipo_contratacao |>
+    query("tipo_contratacao")
 
-  # requisições com múltiplos parâmetros
-
-  d <- database |>
-    dplyr::tbl("tipo_contratacao") |>
-    dplyr::filter(item == tipo_contratacao) |>
-    dplyr::pull(tag)
-
-  e <- database |>
-    dplyr::tbl("uf") |>
-    dplyr::filter(item == uf) |>
-    dplyr::pull(tag)
+  e <- uf |>
+    query("uf")
 
   # URL do tabnet
 
@@ -65,9 +77,9 @@ busca <- function(coluna, conteudo, linha, tipo_contratacao, uf, ano, mes){
 
   # Escolha do ano de consulta.
 
-  periodo <- glue::glue("tb_br_{ano}{mes}.dbf")
+  periodo <- glue::glue("Arquivos=tb_br_{ano}{mes}.dbf&")
 
-  requisicao <- glue::glue("Linha={c}&Coluna={a}&Incremento={b}&Arquivos={periodo}&SSexo=TODAS_AS_CATEGORIAS__&SFaixa_et%E1ria=TODAS_AS_CATEGORIAS__&SFaixa_et%E1ria-Reajuste=TODAS_AS_CATEGORIAS__&STipo_de_contrata%E7%E3o={d}&S%C9poca_de_contrata%E7%E3o=TODAS_AS_CATEGORIAS__&SSegmenta%E7%E3o=TODAS_AS_CATEGORIAS__&SSegmenta%E7%E3o_grupo=TODAS_AS_CATEGORIAS__&SAbrg._Geogr%E1fica=TODAS_AS_CATEGORIAS__&SModalidade=TODAS_AS_CATEGORIAS__&SUF={e}&SGrande_Regi%E3o=TODAS_AS_CATEGORIAS__&SCapital=TODAS_AS_CATEGORIAS__&SInterior=TODAS_AS_CATEGORIAS__&SReg._Metropolitana=TODAS_AS_CATEGORIAS__&formato=table&mostre=Mostra")
+  requisicao <- glue::glue("{c}{a}{b}{periodo}SSexo=TODAS_AS_CATEGORIAS__&SFaixa_et%E1ria=TODAS_AS_CATEGORIAS__&SFaixa_et%E1ria-Reajuste=TODAS_AS_CATEGORIAS__&{d}S%C9poca_de_contrata%E7%E3o=TODAS_AS_CATEGORIAS__&SSegmenta%E7%E3o=TODAS_AS_CATEGORIAS__&SSegmenta%E7%E3o_grupo=TODAS_AS_CATEGORIAS__&SAbrg._Geogr%E1fica=TODAS_AS_CATEGORIAS__&SModalidade=TODAS_AS_CATEGORIAS__&{e}SGrande_Regi%E3o=TODAS_AS_CATEGORIAS__&SCapital=TODAS_AS_CATEGORIAS__&SInterior=TODAS_AS_CATEGORIAS__&SReg._Metropolitana=TODAS_AS_CATEGORIAS__&formato=table&mostre=Mostra")
 
   site <- httr::POST(url = tabnet_ans,
                      body = requisicao,
@@ -87,13 +99,7 @@ busca <- function(coluna, conteudo, linha, tipo_contratacao, uf, ano, mes){
   dados <- dados |>
     tidyr::separate(col = value, sep = "\t", into = paste0("x", 1:n)) |>
     janitor::row_to_names(row_number = 1) |>
-    dplyr::slice(-1) |>
-    dplyr::select(-Total) |>
-    purrr::map_df(stringr::str_replace_all, "\\.", "") |> # remover pontos das observações
-    mutate(across(
-      2:ncol(dados),
-      as.numeric
-    )) # mudar observações de caracteres para valores numéricos
+    purrr::map_df(stringr::str_replace_all, "\\.", "") # remover pontos das observações
 
   return(dados)
 }

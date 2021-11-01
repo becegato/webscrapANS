@@ -5,41 +5,25 @@ source("R/funcoes.R")
 
 # requisicao --------------------------------------------------------------
 
-database <- DBI::dbConnect(RSQLite::SQLite(), "~/ans-tags.db") # Conexão com a base de tags
+database <- DBI::dbConnect(RSQLite::SQLite(), "base/ans-tags.db") # Conexão com a base de tags
 
 DBI::dbListTables(database) # Listando variáveis
-DBI::dbReadTable(database, "linha") # Listando campos disponíveis para consulta
+DBI::dbReadTable(database, "coluna") # Listando campos disponíveis para consulta
 
-dados <- busca(coluna = "Modalidade",
-               conteudo = "Assistencia Medica",
+# consultas múltiplas: conteúdo, tipo de contratação e UF
+# passar ano no formato anoMes (ex: jun-2021 - 2106)
+
+dados <- busca(coluna = "Nao ativa",
+               conteudo = c("Assistencia Medica", "Excl. Odontologico"),
                linha = "UF",
                tipo_contratacao = "Todas as categorias",
-               uf = "Todas as categorias",
-               ano = "12",
-               mes = "06")
-
-uf <- c("Acre", "Goias")
-
-
-teste <- database |>
-  dplyr::tbl("uf") |>
-  dplyr::collect()
-
-uf |>
-  as_tibble() |>
-  rename(item = value) |>
-  left_join(database |>
-              dplyr::tbl("uf") |>
-              dplyr::collect(),
-            by = "item") |>
-
-
-
-  dplyr::inner_join(uf, by = item)
+               uf = c("Acre", "Goias", "Sao Paulo"),
+               periodo = "1206")
 
 #' Próximos passos:
 #'
-#' - Consultas múltiplas
+#' - Consultas múltiplas por período
 #' - Expansão de consultas
-#' - Catalogação automática de tags de tabelas da base de dados - feito
+#' - Catalogação automática de tags de tabelas da base de dados
 #' - Função de opção default "Todas as categorias" caso variável esteja vazia
+#' - Passar base de dados como lista
