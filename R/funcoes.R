@@ -71,35 +71,34 @@ busca <- function(coluna, conteudo, linha, tipo_contratacao, uf, periodo){
   e <- uf |>
     query("uf")
 
+  periodo <- glue::glue("Arquivos=tb_br_{periodo}.dbf&")
+
   # URL do tabnet
 
   tabnet_ans <- "http://www.ans.gov.br/anstabnet/cgi-bin/tabnet?dados/tabnet_br.def"
 
   # Escolha do ano de consulta.
 
-  periodo <- glue::glue("Arquivos=tb_br_{periodo}.dbf&")
-
   requisicao <- glue::glue("{c}{a}{b}{periodo}SSexo=TODAS_AS_CATEGORIAS__&SFaixa_et%E1ria=TODAS_AS_CATEGORIAS__&SFaixa_et%E1ria-Reajuste=TODAS_AS_CATEGORIAS__&{d}S%C9poca_de_contrata%E7%E3o=TODAS_AS_CATEGORIAS__&SSegmenta%E7%E3o=TODAS_AS_CATEGORIAS__&SSegmenta%E7%E3o_grupo=TODAS_AS_CATEGORIAS__&SAbrg._Geogr%E1fica=TODAS_AS_CATEGORIAS__&SModalidade=TODAS_AS_CATEGORIAS__&{e}SGrande_Regi%E3o=TODAS_AS_CATEGORIAS__&SCapital=TODAS_AS_CATEGORIAS__&SInterior=TODAS_AS_CATEGORIAS__&SReg._Metropolitana=TODAS_AS_CATEGORIAS__&formato=table&mostre=Mostra")
 
-  site <- httr::POST(url = tabnet_ans,
+  tab_site <- httr::POST(url = tabnet_ans,
                      body = requisicao,
-                     timeout(20))
-
-  dados <- httr::content(site, encoding = "latin1", as = "parsed") |> # extrair os dados da requisição
+                     timeout(20)) |>
+    httr::content(encoding = "latin1", as = "parsed") |> # extrair os dados da requisição
     rvest::html_node("table") |>
     rvest::html_text2() |> # extração do texto da página gerada pela requisição
     tibble::as_tibble() |>
     tidyr::separate_rows(value, sep = "\n")
 
-  n <- 1 + dados |>
+  n <- 1 + tab_site |>
     dplyr::slice(1) |>
     dplyr::pull() |>
     stringr::str_count(pattern = "\t")
 
-  dados <- dados |>
+  tab_site <- tab_site |>
     tidyr::separate(col = value, sep = "\t", into = paste0("x", 1:n)) |>
     janitor::row_to_names(row_number = 1) |>
     purrr::map_df(stringr::str_replace_all, "\\.", "") # remover pontos das observações
 
-  return(dados)
+  return(tab_site)
 }
