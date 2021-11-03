@@ -10,15 +10,13 @@ writedb <- function(x, name){
                         overwrite = T)
 }
 
-
-
 # função com suporte a múltiplas consultas --------------------------------
 
 query <- function(x, name){
 
   database <- DBI::dbConnect(RSQLite::SQLite(), "base/ans-tags.db") # Conexão com a base de dados "~/ans-tags.db"
 
-  y <- x |>
+  x <- x |>
     dplyr::as_tibble() |>
     dplyr::rename(item = value) |>
     dplyr::left_join(database |>
@@ -29,7 +27,7 @@ query <- function(x, name){
     purrr::flatten_chr() |>
     stringr::str_flatten()
 
-  return(y)
+  return(x)
 }
 
 # limpeza de tabelas ------------------------------------------------------
@@ -52,7 +50,7 @@ clear <- function(x){
 
 busca <- function(coluna, conteudo, linha, tipo_contratacao, uf, ano, mes){
 
-  database <- DBI::dbConnect(RSQLite::SQLite(), "base/ans-tags.db") # Conexão com a base de dados "~/ans-tags.db"
+  database <- DBI::dbConnect(RSQLite::SQLite(), "base/ans-tags.db") # Conexão com a base de dados
 
   # As variáveis de "a" a "e" servem como auxiliares para puxar os valores selecionados para consultas.
 
