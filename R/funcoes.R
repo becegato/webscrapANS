@@ -77,7 +77,7 @@ busca <- function(coluna, conteudo, linha, tipo_contratacao, uf, periodo){
 
   # Escolha do ano de consulta.
 
-  periodo <- glue::glue("Arquivos=tb_br_{ano}{mes}.dbf&")
+  periodo <- glue::glue("Arquivos=tb_br_{periodo}.dbf&")
 
   requisicao <- glue::glue("{c}{a}{b}{periodo}SSexo=TODAS_AS_CATEGORIAS__&SFaixa_et%E1ria=TODAS_AS_CATEGORIAS__&SFaixa_et%E1ria-Reajuste=TODAS_AS_CATEGORIAS__&{d}S%C9poca_de_contrata%E7%E3o=TODAS_AS_CATEGORIAS__&SSegmenta%E7%E3o=TODAS_AS_CATEGORIAS__&SSegmenta%E7%E3o_grupo=TODAS_AS_CATEGORIAS__&SAbrg._Geogr%E1fica=TODAS_AS_CATEGORIAS__&SModalidade=TODAS_AS_CATEGORIAS__&{e}SGrande_Regi%E3o=TODAS_AS_CATEGORIAS__&SCapital=TODAS_AS_CATEGORIAS__&SInterior=TODAS_AS_CATEGORIAS__&SReg._Metropolitana=TODAS_AS_CATEGORIAS__&formato=table&mostre=Mostra")
 
