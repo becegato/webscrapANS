@@ -13,13 +13,15 @@ DBI::dbReadTable(database, "Coluna") # Listando campos disponíveis para consult
 # consultas múltiplas: conteúdo, tipo de contratação e UF
 # passar mês no formato de caractere (ex: mes = "01")
 
-dados <- busca(coluna = "Modalidade",
-               conteudo = "Excl. Odontologico",
-               linha = "Competencia",
-               tipo_contratacao = "Todas as categorias",
-               uf = "Todas as categorias",
-               ano = 15:21,
-               mes = "06")
+dados <- busca(
+  coluna = "Modalidade",
+  conteudo = "Excl. Odontologico",
+  linha = "Competencia",
+  tipo_contratacao = "Todas as categorias",
+  uf = "Todas as categorias",
+  ano = 15:21,
+  mes = "06"
+)
 
 #' Próximos passos:
 #'
