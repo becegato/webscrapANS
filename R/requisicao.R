@@ -8,18 +8,18 @@ source("R/funcoes.R")
 database <- DBI::dbConnect(RSQLite::SQLite(), "base/ans-tags.db") # Conexão com a base de tags
 
 DBI::dbListTables(database) # Listando variáveis
-DBI::dbReadTable(database, "Coluna") # Listando campos disponíveis para consulta
+DBI::dbReadTable(database, "tipo_contratacao") # Listando campos disponíveis para consulta
 
 # consultas múltiplas: conteúdo, tipo de contratação e UF
 # passar mês no formato de caractere (ex: mes = "01")
 
 dados <- busca(
-  coluna = "Modalidade",
-  conteudo = "Excl. Odontologico",
+  coluna = "UF",
+  conteudo = "Assistencia Medica",
   linha = "Competencia",
   tipo_contratacao = "Todas as categorias",
   uf = "Todas as categorias",
-  ano = 15:21,
+  ano = 21,
   mes = "06"
 )
 
