@@ -28,4 +28,4 @@ dados <- busca(
 #' - Expansão de consultas
 #' - Catalogação automática de tags de tabelas da base de dados
 #' - Função de opção default "Todas as categorias" caso variável esteja vazia
-#' - Passar base de dados como lista
+#' - Busca por grande região
