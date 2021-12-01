@@ -1,3 +1,5 @@
+#### criação de base para página de beneficiários do tabnet ####
+
 # bibliotecas e funções ---------------------------------------------------
 
 source("R/bibliotecas.R")
@@ -94,6 +96,8 @@ html |>
     y = "&"
   ) |>
   writedb("uf")
+
+# regiao
 
 html |>
   rvest::html_element("#S11") |>
