@@ -94,3 +94,13 @@ html |>
     y = "&"
   ) |>
   writedb("uf")
+
+html |>
+  rvest::html_element("#S11") |>
+  clear() |>
+  dplyr::mutate(
+    x = "SGrande_Regi%E3o=",
+    tag = c("TODAS_AS_CATEGORIAS__", "1", "2", "3", "4", "5", "6", "7"),
+    y = "&"
+  ) |>
+  writedb("regiao")

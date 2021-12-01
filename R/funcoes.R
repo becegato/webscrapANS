@@ -46,7 +46,6 @@ clear <- function(x) {
     dplyr::slice(-n()) # Remover última linha por conta do último \n nas variáveis
 }
 
-
 # argumentos vazios -------------------------------------------------------
 
 #' checa se argumento foi passado para função
@@ -79,8 +78,6 @@ busca <- function(coluna = NA,
     purrr::map_chr(
     ~ {.x <- missing_arg(.x); .x}
   )
-
-  }
 
   a <- vars[1] |>
     query("coluna")
