@@ -47,34 +47,62 @@ clear <- function(x) {
 }
 
 
+# argumentos vazios -------------------------------------------------------
+
+#' checa se argumento foi passado para função
+#' caso contrário, adiciona valor padrão
+
+missing_arg <- function (x){
+
+  if(is.na(x)){
+    return("TODAS_AS_CATEGORIAS__")
+  }
+
+  return(x)
+
+}
+
+
 # requisições do tabnet ---------------------------------------------------
 
-busca <- function(coluna, conteudo, linha, tipo_contratacao, uf, ano, mes) {
+busca <- function(coluna = NA,
+                  conteudo = NA,
+                  linha = NA,
+                  tipo_contratacao = NA,
+                  uf = NA,
+                  ano = NA,
+                  mes = NA) {
+
   database <- DBI::dbConnect(RSQLite::SQLite(), "base/ans-tags.db") # Conexão com a base de dados
 
-  # As variáveis de "a" a "e" servem como auxiliares para puxar os valores selecionados para consultas.
+  vars <- c(coluna, conteudo, linha, tipo_contratacao, uf, ano, mes) |>
+    purrr::map_chr(
+    ~ {.x <- missing_arg(.x); .x}
+  )
 
-  a <- coluna |>
+  }
+
+  a <- vars[1] |>
     query("coluna")
 
-  b <- conteudo |>
+  b <- vars[2] |>
     query("conteudo")
 
-  c <- linha |>
+  c <- vars[3] |>
     query("linha")
 
-  d <- tipo_contratacao |>
+  d <- vars[4] |>
     query("tipo_contratacao")
 
-  e <- uf |>
+  e <- vars[5] |>
     query("uf")
 
-  f <- ano |>
+  f <- vars[6] |>
     dplyr::as_tibble() |>
     dplyr::mutate(
       x = "Arquivos=tb_br_",
       y = ".dbf&",
-      z = mes,
+      z = vars[7],
       value = as.character(value)
     ) |>
     tidyr::unite("periodo", c(x, value, z, y), sep = "") |>

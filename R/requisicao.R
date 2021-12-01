@@ -14,13 +14,13 @@ DBI::dbReadTable(database, "tipo_contratacao") # Listando campos disponíveis pa
 # passar mês no formato de caractere (ex: mes = "01")
 
 dados <- busca(
-  coluna = "UF",
+  # coluna = "UF",
   conteudo = "Assistencia Medica",
   linha = "Competencia",
   tipo_contratacao = "Todas as categorias",
   uf = "Todas as categorias",
-  ano = 21,
-  mes = "06"
+  ano = 10,
+  mes = "03"
 )
 
 #' Próximos passos:
