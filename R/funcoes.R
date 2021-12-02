@@ -1,14 +1,38 @@
 # importação na base ------------------------------------------------------
 
 writedb <- function(x, name) {
-  x <- x |> tidyr::unite("tag", c(x, tag, y), sep = "")
 
+  # junta variáveis auxiliares para criar tags da requisição
+  x <- x |>
+    tidyr::unite("tag", c(x, tag, y), sep = "")
+
+  # cria tabela caso ela não exista na base
+  if(DBI::dbExistsTable(database, name) == F){
+
+    DBI::dbCreateTable(conn = database,
+                       name = name,
+                       fields = x,
+                       row.names = NULL)
+
+  }
+
+  # adiciona novas tags e verifica tags duplicadas
+  x <- x |>
+      dplyr::bind_rows(
+      dplyr::tbl(database, glue::glue("{name}")) |>
+        dplyr::collect()
+    ) |>
+    dplyr::group_by(tipo) |>
+    dplyr::distinct(item, tag)
+
+  # escreve na base
   RSQLite::dbWriteTable(
     conn = database,
     name = glue::glue("{name}"),
     value = x,
     overwrite = T
   )
+
 }
 
 # função com suporte a múltiplas consultas --------------------------------
@@ -19,14 +43,15 @@ query <- function(x, name) {
   x <- x |>
     dplyr::as_tibble() |>
     dplyr::rename(item = value) |>
-    dplyr::left_join(database |>
-      dplyr::tbl(paste0(name)) |>
-      dplyr::collect(),
+    dplyr::left_join(
+      database |>
+        dplyr::tbl(paste0(name)) |>
+        dplyr::collect(),
     by = "item"
-    ) |>
+    ) |> # filtrando tags necessárias para a requisição
     dplyr::select(tag) |>
     purrr::flatten_chr() |>
-    stringr::str_flatten()
+    stringr::str_flatten() # criando string da consulta
 
   return(x)
 }
@@ -36,6 +61,7 @@ query <- function(x, name) {
 #' Essa função serve para limpar os dados antes de importar para a base de dados do SQLite.
 
 clear <- function(x) {
+
   x |>
     rvest::html_text() |>
     stringi::stri_trans_general(id = "Latin-ASCII") |> # Remover acentos na exportação
@@ -61,7 +87,6 @@ missing_arg <- function (x){
 
 }
 
-
 # requisições do tabnet ---------------------------------------------------
 
 busca <- function(coluna = NA,
@@ -70,7 +95,8 @@ busca <- function(coluna = NA,
                   tipo_contratacao = NA,
                   uf = NA,
                   ano = NA,
-                  mes = NA) {
+                  mes = NA,
+                  base) {
 
   database <- DBI::dbConnect(RSQLite::SQLite(), "base/ans-tags.db") # Conexão com a base de dados
 
