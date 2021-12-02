@@ -2,6 +2,18 @@
 
 writedb <- function(x, name) {
 
+  # criando base sqlite
+
+  if(fs::dir_exists("base/") == F){
+
+    fs::dir_create("base/")
+
+  }
+
+  # criação/conexão com base sqlite
+
+  database <- DBI::dbConnect(RSQLite::SQLite(), "base/ans-tags.db") # "base/ans-tags.db"
+
   # junta variáveis auxiliares para criar tags da requisição
   x <- x |>
     tidyr::unite("tag", c(x, tag, y), sep = "")
@@ -33,6 +45,8 @@ writedb <- function(x, name) {
     overwrite = T
   )
 
+  DBI::dbDisconnect(database)
+
 }
 
 # função com suporte a múltiplas consultas --------------------------------
@@ -46,9 +60,11 @@ query <- function(x, name) {
     dplyr::left_join(
       database |>
         dplyr::tbl(paste0(name)) |>
-        dplyr::collect(),
+        dplyr::collect() |>
+        purrr::when(base == "benef_uf" ~ dplyr::filter(., tipo == base),
+                    ~ dplyr::filter(., tipo != base)),
     by = "item"
-    ) |> # filtrando tags necessárias para a requisição
+    ) |> # filtrando tags necessárias para a requisição por página solicitada
     dplyr::select(tag) |>
     purrr::flatten_chr() |>
     stringr::str_flatten() # criando string da consulta
@@ -77,10 +93,10 @@ clear <- function(x) {
 #' checa se argumento foi passado para função
 #' caso contrário, adiciona valor padrão
 
-missing_arg <- function (x){
+missing_args <- function (x){
 
   if(is.na(x)){
-    return("TODAS_AS_CATEGORIAS__")
+    return("Todas as categorias")
   }
 
   return(x)
@@ -89,48 +105,57 @@ missing_arg <- function (x){
 
 # requisições do tabnet ---------------------------------------------------
 
-busca <- function(coluna = NA,
-                  conteudo = NA,
-                  linha = NA,
+busca <- function(coluna = "Nao ativa", # valor padrão para as linhas
+                  conteudo = "Benef. Asst. Medica",
+                  linha = "Competencia",
+                  modalidade = NA,
+                  regiao = NA,
                   tipo_contratacao = NA,
                   uf = NA,
-                  ano = NA,
-                  mes = NA,
-                  base) {
+                  base = "benef_op",
+                  ano, mes) {
 
   database <- DBI::dbConnect(RSQLite::SQLite(), "base/ans-tags.db") # Conexão com a base de dados
 
-  vars <- c(coluna, conteudo, linha, tipo_contratacao, uf, ano, mes) |>
+  vars <- c(modalidade, regiao, tipo_contratacao, uf) |>
     purrr::map_chr(
-    ~ {.x <- missing_arg(.x); .x}
+    ~ {.x <- missing_args(.x); .x}
   )
 
-  a <- vars[1] |>
+  a <- coluna |>
     query("coluna")
 
-  b <- vars[2] |>
+  b <- conteudo |>
     query("conteudo")
 
-  c <- vars[3] |>
+  c <- linha |>
     query("linha")
 
-  d <- vars[4] |>
+  d <- vars[3] |>
     query("tipo_contratacao")
 
-  e <- vars[5] |>
+  e <- vars[4] |>
     query("uf")
 
-  f <- vars[6] |>
+  f <- ano |>
     dplyr::as_tibble() |>
     dplyr::mutate(
       x = "Arquivos=tb_br_",
       y = ".dbf&",
-      z = vars[7],
+      z = mes,
       value = as.character(value)
     ) |>
     tidyr::unite("periodo", c(x, value, z, y), sep = "") |>
     purrr::flatten_chr() |>
     stringr::str_flatten()
+
+  g <- vars[1] |>
+    query("modalidade")
+
+  h <- vars[2] |>
+    query("regiao")
+
+
 
   # URL do tabnet
 

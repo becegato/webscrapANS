@@ -33,10 +33,6 @@ html |>
 
 # construindo base de dados -----------------------------------------------
 
-# criando base sqlite
-
-database <- DBI::dbConnect(RSQLite::SQLite(), "base/ans-tags.db") # "base/ans-tags.db"
-
 # linha
 
 x <- html |>
