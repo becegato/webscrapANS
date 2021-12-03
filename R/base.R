@@ -36,7 +36,7 @@ html <- rvest::read_html("http://www.ans.gov.br/anstabnet/cgi-bin/dh?dados/tabne
 
 # linha
 
-x <- html |>
+html |>
   rvest::html_element("#L") |>
   clear() |>
   dplyr::mutate(

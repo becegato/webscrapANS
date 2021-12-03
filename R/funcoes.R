@@ -203,5 +203,7 @@ busca <- function(coluna = "Nao ativa", # valor padrão para as linhas
     janitor::row_to_names(row_number = 1) |>
     purrr::map_df(stringr::str_replace_all, "\\.", "") # remover pontos das observações
 
+  DBI::dbDisconnect(database)
+
   return(tab_site)
 }
