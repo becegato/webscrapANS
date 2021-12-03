@@ -51,7 +51,8 @@ writedb <- function(x, name) {
 
 # função com suporte a múltiplas consultas --------------------------------
 
-query <- function(x, name) {
+query <- function(x, name, site) {
+
   database <- DBI::dbConnect(RSQLite::SQLite(), "base/ans-tags.db") # Conexão com a base de dados "~/ans-tags.db"
 
   x <- x |>
@@ -61,8 +62,7 @@ query <- function(x, name) {
       database |>
         dplyr::tbl(paste0(name)) |>
         dplyr::collect() |>
-        purrr::when(base == "benef_uf" ~ dplyr::filter(., tipo == base),
-                    ~ dplyr::filter(., tipo != base)),
+        dplyr::filter(tipo == site),
     by = "item"
     ) |> # filtrando tags necessárias para a requisição por página solicitada
     dplyr::select(tag) |>
@@ -106,14 +106,13 @@ missing_args <- function (x){
 # requisições do tabnet ---------------------------------------------------
 
 busca <- function(coluna = "Nao ativa", # valor padrão para as linhas
-                  conteudo = "Benef. Asst. Medica",
+                  conteudo = "Assistencia Medica",
                   linha = "Competencia",
                   modalidade = NA,
                   regiao = NA,
                   tipo_contratacao = NA,
                   uf = NA,
-                  base = "benef_op",
-                  ano, mes) {
+                  site, ano, mes) {
 
   database <- DBI::dbConnect(RSQLite::SQLite(), "base/ans-tags.db") # Conexão com a base de dados
 
@@ -123,53 +122,71 @@ busca <- function(coluna = "Nao ativa", # valor padrão para as linhas
   )
 
   a <- coluna |>
-    query("coluna")
+    query("coluna", site)
 
   b <- conteudo |>
-    query("conteudo")
+    query("conteudo", site)
 
   c <- linha |>
-    query("linha")
+    query("linha", site)
 
   d <- vars[3] |>
-    query("tipo_contratacao")
+    query("tipo_contratacao", site)
 
   e <- vars[4] |>
-    query("uf")
+    query("uf", site)
 
-  f <- ano |>
-    dplyr::as_tibble() |>
-    dplyr::mutate(
-      x = "Arquivos=tb_br_",
-      y = ".dbf&",
-      z = mes,
-      value = as.character(value)
-    ) |>
-    tidyr::unite("periodo", c(x, value, z, y), sep = "") |>
-    purrr::flatten_chr() |>
-    stringr::str_flatten()
+  g <- vars[2] |>
+    query("regiao", site)
 
-  g <- vars[1] |>
-    query("modalidade")
+  h <- vars[1] |>
+    query("modalidade", site)
 
-  h <- vars[2] |>
-    query("regiao")
+  if(site == "benef_op"){
 
+    f <- ano |>
+      dplyr::as_tibble() |>
+      dplyr::mutate(
+        x = "Arquivos=tb_cc_",
+        y = ".dbf&",
+        z = mes,
+        value = as.character(value)
+      ) |>
+      tidyr::unite("periodo", c(x, value, z, y), sep = "") |>
+      purrr::flatten_chr() |>
+      stringr::str_flatten()
 
+    tabnet_ans <- "http://www.ans.gov.br/anstabnet/cgi-bin/tabnet?dados/tabnet_cc.def"
 
-  # URL do tabnet
+    requisicao <- glue::glue("{c}{a}{b}{f}SRaz%E3o_Social=TODAS_AS_CATEGORIAS__&{h}{d}SFaixa_de_Benef=TODAS_AS_CATEGORIAS__&{g}{e}SCapital=TODAS_AS_CATEGORIAS__&SInterior=TODAS_AS_CATEGORIAS__&SReg.Metropolitana=TODAS_AS_CATEGORIAS__&formato=table&mostre=Mostra")
 
-  tabnet_ans <- "http://www.ans.gov.br/anstabnet/cgi-bin/tabnet?dados/tabnet_br.def"
+  } else{
 
-  # Escolha do ano de consulta.
+    f <- ano |>
+      dplyr::as_tibble() |>
+      dplyr::mutate(
+        x = "Arquivos=tb_br_",
+        y = ".dbf&",
+        z = mes,
+        value = as.character(value)
+      ) |>
+      tidyr::unite("periodo", c(x, value, z, y), sep = "") |>
+      purrr::flatten_chr() |>
+      stringr::str_flatten()
 
-  requisicao <- glue::glue("{c}{a}{b}{f}SSexo=TODAS_AS_CATEGORIAS__&SFaixa_et%E1ria=TODAS_AS_CATEGORIAS__&SFaixa_et%E1ria-Reajuste=TODAS_AS_CATEGORIAS__&{d}S%C9poca_de_contrata%E7%E3o=TODAS_AS_CATEGORIAS__&SSegmenta%E7%E3o=TODAS_AS_CATEGORIAS__&SSegmenta%E7%E3o_grupo=TODAS_AS_CATEGORIAS__&SAbrg._Geogr%E1fica=TODAS_AS_CATEGORIAS__&SModalidade=TODAS_AS_CATEGORIAS__&{e}SGrande_Regi%E3o=TODAS_AS_CATEGORIAS__&SCapital=TODAS_AS_CATEGORIAS__&SInterior=TODAS_AS_CATEGORIAS__&SReg._Metropolitana=TODAS_AS_CATEGORIAS__&formato=table&mostre=Mostra")
+    tabnet_ans <- "http://www.ans.gov.br/anstabnet/cgi-bin/tabnet?dados/tabnet_br.def"
+
+    requisicao <- glue::glue("{c}{a}{b}{f}SSexo=TODAS_AS_CATEGORIAS__&SFaixa_et%E1ria=TODAS_AS_CATEGORIAS__&SFaixa_et%E1ria-Reajuste=TODAS_AS_CATEGORIAS__&{d}S%C9poca_de_contrata%E7%E3o=TODAS_AS_CATEGORIAS__&SSegmenta%E7%E3o=TODAS_AS_CATEGORIAS__&SSegmenta%E7%E3o_grupo=TODAS_AS_CATEGORIAS__&SAbrg._Geogr%E1fica=TODAS_AS_CATEGORIAS__&SModalidade=TODAS_AS_CATEGORIAS__&{e}{g}SCapital=TODAS_AS_CATEGORIAS__&SInterior=TODAS_AS_CATEGORIAS__&SReg._Metropolitana=TODAS_AS_CATEGORIAS__&formato=table&mostre=Mostra")
+
+  }
+
+  # escolha do ano de consulta
 
   tab_site <- httr::POST(
-    url = tabnet_ans,
-    body = requisicao,
-    timeout(20)
-  ) |>
+      url = tabnet_ans,
+      body = requisicao,
+      timeout(20)
+    ) |>
     httr::content(encoding = "latin1", as = "parsed") |> # extrair os dados da requisição
     rvest::html_node("table") |>
     rvest::html_text2() |> # extração do texto da página gerada pela requisição

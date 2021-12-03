@@ -72,6 +72,19 @@ html |>
   ) |>
   writedb("conteudo")
 
+# modalidade
+
+html |>
+  rvest::html_element("#S9") |>
+  clear() |>
+  dplyr::mutate(
+    x = "SModalidade=",
+    tag = c("TODAS_AS_CATEGORIAS__", "1", "2", "3", "4", "5", "6", "7", "8", "9"),
+    y = "&",
+    tipo = "benef_uf"
+  ) |>
+  writedb("modalidade")
+
 # tipo_contratacao
 
 html |>
@@ -148,10 +161,14 @@ html |>
   clear() |>
   dplyr::mutate(
     x = "Incremento=",
-    tag = c("Assist%EAncia_M%E9dica", "Excl._Odontol%F3gico"),
+    tag = c("Benef._Asst._M%E9dica", "Benef._Excl._Odont."),
     y = "&",
     tipo = "benef_op"
   ) |>
+  dplyr::mutate(item = dplyr::case_when(
+    item == "Benef. Asst. Medica" ~ "Assistencia Medica",
+    item == "Benef. Excl. Odont." ~ "Excl. Odontologico"
+  )) |>
   writedb("conteudo")
 
 # modalidade
@@ -180,19 +197,6 @@ html |>
   ) |>
   writedb("tipo_contratacao")
 
-# regiao
-
-html |>
-  rvest::html_element("#S5") |>
-  clear() |>
-  dplyr::mutate(
-    x = "SGrande_Regi%E3o=",
-    tag = c("TODAS_AS_CATEGORIAS__", "1", "2", "3", "4", "5", "6", "7"),
-    y = "&",
-    tipo = "benef_op"
-  ) |>
-  writedb("regiao")
-
 # uf
 
 html |>
@@ -205,3 +209,16 @@ html |>
     tipo = "benef_op"
   ) |>
   writedb("uf")
+
+# regiao
+
+html |>
+  rvest::html_element("#S5") |>
+  clear() |>
+  dplyr::mutate(
+    x = "SRegi%E3o=",
+    tag = c("TODAS_AS_CATEGORIAS__", "1", "2", "3", "4", "5", "6", "7"),
+    y = "&",
+    tipo = "benef_op"
+  ) |>
+  writedb("regiao")
