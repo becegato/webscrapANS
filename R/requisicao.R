@@ -1,11 +1,12 @@
 # bibliotecas e funções ---------------------------------------------------
 
 source("R/bibliotecas.R")
+source("R/base.R")
 source("R/funcoes.R")
 
 # requisicao --------------------------------------------------------------
 
-database <- DBI::dbConnect(RSQLite::SQLite(), "base/ans-tags.db") # Conexão com a base de tags
+database <- DBI::dbConnect(RSQLite::SQLite(), "tags/ans-tags.db") # Conexão com a base de tags
 
 DBI::dbListTables(database) # Listando variáveis
 DBI::dbReadTable(database, "coluna") # Listando campos disponíveis para consulta
