@@ -3,13 +3,11 @@
 writedb <- function(x, name) {
 
   # criando base sqlite
-
   if (fs::dir_exists("tags/") == F) {
     fs::dir_create("tags/")
   }
 
   # criação/conexão com base sqlite
-
   database <- DBI::dbConnect(RSQLite::SQLite(), "tags/ans-tags.db") # "base/ans-tags.db"
 
   # junta variáveis auxiliares para criar tags da requisição
@@ -44,6 +42,7 @@ writedb <- function(x, name) {
   )
 
   DBI::dbDisconnect(database)
+
 }
 
 # função com suporte a múltiplas consultas --------------------------------
@@ -70,17 +69,16 @@ query <- function(x, name, site) {
 
 # limpeza de tabelas ------------------------------------------------------
 
-#' Essa função serve para limpar os dados antes de importar para a base de dados do SQLite.
+#' essa função serve para limpar os dados antes de importar para a base de dados do SQLite.
 
 clear <- function(x) {
   x <- x |>
     rvest::html_text() |>
-    stringi::stri_trans_general(id = "Latin-ASCII") |> # Remover acentos na exportação
+    stringi::stri_trans_general(id = "Latin-ASCII") |> # remover acentos na exportação
     tibble::as_tibble() |>
-    tidyr::separate_rows(value, sep = "\n") |> # Padrão para separar as linhas
+    tidyr::separate_rows(value, sep = "\n") |> # padrão para separar as linhas
     dplyr::rename(item = value) |>
-    dplyr::mutate(tag = "") |> # Criando coluna para inclusão de tags
-    dplyr::slice(-n()) # Remover última linha por conta do último \n nas variáveis
+    dplyr::slice(-n()) # remover última linha por conta do último \n nas variáveis
 
   return(x)
 }
@@ -108,7 +106,7 @@ busca <- function(coluna = "Nao ativa", # valor padrão para as linhas
                   tipo_contratacao = NA,
                   uf = NA,
                   site, ano, mes) {
-  database <- DBI::dbConnect(RSQLite::SQLite(), "tags/ans-tags.db") # Conexão com a base de dados
+  database <- DBI::dbConnect(RSQLite::SQLite(), "tags/ans-tags.db") # conexão com a base de dados
 
   if (site == "benef_op") {
     pagina <- "Arquivos=tb_cc_"
@@ -164,7 +162,6 @@ busca <- function(coluna = "Nao ativa", # valor padrão para as linhas
   requisicao <- glue::glue(requisicao)
 
   # escolha do ano de consulta
-
   tab_site <- httr::POST(
     url = tabnet_ans,
     body = requisicao,

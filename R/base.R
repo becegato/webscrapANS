@@ -27,37 +27,45 @@ source("R/funcoes.R")
 #     regex('\\\"'), ""
 #   )
 
-
 # base de dados - beneficiários por uf ------------------------------------
 
-# url do site
+# banco de tags
 
-html <- rvest::read_html("http://www.ans.gov.br/anstabnet/cgi-bin/dh?dados/tabnet_br.def")
-
-# linha
-
-html |>
-  rvest::html_element("#L") |>
-  clear() |>
-  dplyr::mutate(
+elements <- list(
+  linha_uf = tibble::tibble(
     x = "Linha=",
     tag = c("Compet%EAncia", "Sexo", "Faixa_et%E1ria", "Faixa_et%E1ria-Reajuste", "Tipo_de_contrata%E7%E3o", "%C9poca_de_contrata%E7%E3o", "Segmenta%E7%E3o", "Segmenta%E7%E3o_grupo", "Abrg._Geogr%E1fica", "Modalidade", "UF", "Grande_Regi%E3o%2FUF", "Grande_Regi%E3o", "Capital", "Interior", "Reg._Metropolitana"),
     y = "&",
-    tipo = "benef_uf") |>
-  writedb("linha")
-
-# coluna
-
-html |>
-  rvest::html_element("#C") |>
-  clear() |>
-  dplyr::mutate(
+    tipo = "benef_uf"
+  ),
+  coluna_uf = tibble::tibble(
     x = "Coluna=",
     tag = c("--N%E3o-Ativa--", "Compet%EAncia", "Sexo", "Faixa_et%E1ria", "Faixa_et%E1ria-Reajuste", "Tipo_de_contrata%E7%E3o", "%C9poca_de_contrata%E7%E3o", "Segmenta%E7%E3o", "Segmenta%E7%E3o_grupo", "Abrg._Geogr%E1fica", "Modalidade", "UF", "Grande_Regi%E3o", "Capital", "Interior", "Reg._Metropolitana"),
     y = "&",
     tipo = "benef_uf"
-  ) |>
-  writedb("coluna")
+  ),
+  conteudo_uf = tibble::tibble(
+    x = "Incremento=",
+    tag = c("Assist%EAncia_M%E9dica", "Excl._Odontol%F3gico"),
+    y = "&",
+    tipo = "benef_uf"
+  )
+)
+
+css_uf <- c("#L", "#C", "#I") #, "#S9", "#S4", "#S10", "#S11")
+
+html <- rvest::read_html("http://www.ans.gov.br/anstabnet/cgi-bin/dh?dados/tabnet_br.def")
+
+purrr::map2(
+  .x = elements,
+  .y = css_uf,
+  ~ mutate(
+    .x,
+    html |>
+      rvest::html_element(.y) |>
+      clear()
+  )
+)
 
 # conteudo
 
