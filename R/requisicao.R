@@ -1,5 +1,7 @@
 # bibliotecas e funções ---------------------------------------------------
 
+rm(list = ls())
+
 source("R/bibliotecas.R")
 source("R/base.R")
 source("R/funcoes.R")
@@ -9,7 +11,7 @@ source("R/funcoes.R")
 database <- DBI::dbConnect(RSQLite::SQLite(), "tags/ans-tags.db") # Conexão com a base de tags
 
 DBI::dbListTables(database) # Listando variáveis
-DBI::dbReadTable(database, "coluna") # Listando campos disponíveis para consulta
+DBI::dbReadTable(database, "uf") # Listando campos disponíveis para consulta
 
 #' consultas múltiplas: conteúdo, tipo de contratação e UF
 #' passar mês no formato de caractere (ex: mes = "01")
@@ -27,6 +29,5 @@ dados <- busca(
 )
 
 #' Próximos passos:
-#'
-#' - Expansão de consultas
+
 #' - Catalogação automática de tags de tabelas da base de dados

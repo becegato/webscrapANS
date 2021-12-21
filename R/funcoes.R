@@ -2,13 +2,11 @@
 
 writedb <- function(x, name) {
 
-  # criando base sqlite
-  if (fs::dir_exists("tags/") == F) {
-    fs::dir_create("tags/")
-  }
-
   # criação/conexão com base sqlite
-  database <- DBI::dbConnect(RSQLite::SQLite(), "tags/ans-tags.db") # "base/ans-tags.db"
+  database <- DBI::dbConnect(
+    RSQLite::SQLite(),
+    "tags/ans-tags.db"
+  ) # "base/ans-tags.db"
 
   # junta variáveis auxiliares para criar tags da requisição
   x <- x |>
@@ -43,6 +41,7 @@ writedb <- function(x, name) {
 
   DBI::dbDisconnect(database)
 
+  return("Importado")
 }
 
 # função com suporte a múltiplas consultas --------------------------------
@@ -171,19 +170,22 @@ busca <- function(coluna = "Nao ativa", # valor padrão para as linhas
     rvest::html_node("table") |>
     rvest::html_text2() |> # extração do texto da página gerada pela requisição
     tibble::as_tibble() |>
-    tidyr::separate_rows(value, sep = "\n") |>
+    tidyr::separate_rows(value, sep = "\n")
+
+  n <- 1 + tab_site |>
+    dplyr::slice(1) |>
+    dplyr::pull() |>
+    stringr::str_count(pattern = "\t")
+
+  tab_site <- tab_site |>
     tidyr::separate(
       col = value,
       sep = "\t",
       into = paste0(
         "x",
-        1:(1 + tab_site |>
-          dplyr::slice(1) |>
-          dplyr::pull() |>
-          stringr::str_count(pattern = "\t")
+        1:n
         )
-      )
-    ) |>
+      ) |>
     janitor::row_to_names(row_number = 1) |>
     purrr::map_df(stringr::str_replace_all, "\\.", "") # remover pontos das observações
 
