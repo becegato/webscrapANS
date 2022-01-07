@@ -1,3 +1,3 @@
 # Web Scrap - Tabnet da ANS
 
-Projeto de extração de dados do site do tabnet da ANS para o campo de "Beneficiários por Operadora". O código pega dados da página da ANS e transforma em tabelas limpas, prontas para análise.
+Extração de dados do site [ANS TABNET](http://www.ans.gov.br/anstabnet/index.htm) para os campos de Consultas -> Beneficiários -> UF, Região Metropolitana e Capital e Operadora. O código pega dados da página a partir de requisições e parsing, e os converte em tabelas limpas, prontas para análise.
