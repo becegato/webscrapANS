@@ -5,7 +5,6 @@
 source("R/bibliotecas.R")
 source("R/funcoes.R")
 
-
 # pasta da base sqlite ----------------------------------------------------
 
 if (fs::dir_exists("tags/") == F) {
@@ -93,7 +92,7 @@ vars <- list(
   c = c("linha", "coluna", "conteudo", "modalidade", "tipo_contratacao", "uf", "regiao") # nome das tabelas da base de consulta
 )
 
-purrr::pmap(
+purrr::pwalk(
   .l = vars,
   function(a, b, c) {
     a |>
@@ -161,7 +160,7 @@ vars <- list(
   c = c("linha", "coluna", "conteudo", "modalidade", "tipo_contratacao", "uf", "regiao") # nome das tabelas da base de consulta
 )
 
-purrr::pmap(
+purrr::pwalk(
   .l = vars,
   function(a, b, c) {
     a |>

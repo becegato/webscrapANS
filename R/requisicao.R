@@ -1,7 +1,5 @@
 # bibliotecas e funções ---------------------------------------------------
 
-rm(list = ls())
-
 source("R/bibliotecas.R")
 source("R/base.R")
 source("R/funcoes.R")

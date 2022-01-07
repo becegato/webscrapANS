@@ -40,8 +40,6 @@ writedb <- function(x, name) {
   )
 
   DBI::dbDisconnect(database)
-
-  return("Importado")
 }
 
 # função com suporte a múltiplas consultas --------------------------------
