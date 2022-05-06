@@ -1,18 +1,18 @@
-# importação na base ------------------------------------------------------
+# --------------- #
+# --- FUNÇÕES --- #
+# --------------- #
+
+# importação na base sqlite -----------------------------------------------
 
 writedb <- function(x, name) {
-
-  # criação/conexão com base sqlite
   database <- DBI::dbConnect(
     RSQLite::SQLite(),
     "tags/ans-tags.db"
-  ) # "base/ans-tags.db"
+  )
 
-  # junta variáveis auxiliares para criar tags da requisição
   x <- x |>
     tidyr::unite("tag", c(x, tag, y), sep = "")
 
-  # cria tabela caso ela não exista na base
   if (DBI::dbExistsTable(database, name) == F) {
     DBI::dbCreateTable(
       conn = database,
@@ -22,7 +22,6 @@ writedb <- function(x, name) {
     )
   }
 
-  # adiciona novas tags e verifica tags duplicadas
   x <- x |>
     dplyr::bind_rows(
       dplyr::tbl(database, glue::glue("{name}")) |>
@@ -31,7 +30,6 @@ writedb <- function(x, name) {
     dplyr::group_by(tipo) |>
     dplyr::distinct(item, tag)
 
-  # escreve na base
   RSQLite::dbWriteTable(
     conn = database,
     name = glue::glue("{name}"),
@@ -45,7 +43,7 @@ writedb <- function(x, name) {
 # função com suporte a múltiplas consultas --------------------------------
 
 query <- function(x, name, site) {
-  database <- DBI::dbConnect(RSQLite::SQLite(), "tags/ans-tags.db") # Conexão com a base de dados "~/ans-tags.db"
+  database <- DBI::dbConnect(RSQLite::SQLite(), "tags/ans-tags.db")
 
   x <- x |>
     dplyr::as_tibble() |>
@@ -56,34 +54,29 @@ query <- function(x, name, site) {
         dplyr::collect() |>
         dplyr::filter(tipo == site),
       by = "item"
-    ) |> # filtrando tags necessárias para a requisição por página solicitada
+    ) |>
     dplyr::select(tag) |>
     purrr::flatten_chr() |>
-    stringr::str_flatten() # criando string da consulta
+    stringr::str_flatten()
 
   return(x)
 }
 
 # limpeza de tabelas ------------------------------------------------------
 
-#' essa função serve para limpar os dados antes de importar para a base de dados do SQLite.
-
 clear <- function(x) {
   x <- x |>
     rvest::html_text() |>
-    stringi::stri_trans_general(id = "Latin-ASCII") |> # remover acentos na exportação
+    stringi::stri_trans_general(id = "Latin-ASCII") |>
     tibble::as_tibble() |>
-    tidyr::separate_rows(value, sep = "\n") |> # padrão para separar as linhas
+    tidyr::separate_rows(value, sep = "\n") |>
     dplyr::rename(item = value) |>
-    dplyr::slice(-n()) # remover última linha por conta do último \n nas variáveis
+    dplyr::slice(-n())
 
   return(x)
 }
 
 # argumentos vazios -------------------------------------------------------
-
-#' checa se argumento foi passado para função
-#' caso contrário, adiciona valor padrão
 
 missing_args <- function(x) {
   if (is.na(x)) {
@@ -95,7 +88,7 @@ missing_args <- function(x) {
 
 # requisições do tabnet ---------------------------------------------------
 
-busca <- function(coluna = "Nao ativa", # valor padrão para as linhas
+busca <- function(coluna = "Nao ativa",
                   conteudo = "Assistencia Medica",
                   linha = "Competencia",
                   modalidade = NA,
@@ -103,7 +96,7 @@ busca <- function(coluna = "Nao ativa", # valor padrão para as linhas
                   tipo_contratacao = NA,
                   uf = NA,
                   site, ano, mes) {
-  database <- DBI::dbConnect(RSQLite::SQLite(), "tags/ans-tags.db") # conexão com a base de dados
+  database <- DBI::dbConnect(RSQLite::SQLite(), "tags/ans-tags.db")
 
   if (site == "benef_op") {
     pagina <- "Arquivos=tb_cc_"
@@ -158,15 +151,14 @@ busca <- function(coluna = "Nao ativa", # valor padrão para as linhas
 
   requisicao <- glue::glue(requisicao)
 
-  # escolha do ano de consulta
   tab_site <- httr::POST(
     url = tabnet_ans,
     body = requisicao,
     timeout(20)
   ) |>
-    httr::content(encoding = "latin1", as = "parsed") |> # extrair os dados da requisição
+    httr::content(encoding = "latin1", as = "parsed") |>
     rvest::html_node("table") |>
-    rvest::html_text2() |> # extração do texto da página gerada pela requisição
+    rvest::html_text2() |>
     tibble::as_tibble() |>
     tidyr::separate_rows(value, sep = "\n")
 
@@ -182,10 +174,10 @@ busca <- function(coluna = "Nao ativa", # valor padrão para as linhas
       into = paste0(
         "x",
         1:n
-        )
-      ) |>
+      )
+    ) |>
     janitor::row_to_names(row_number = 1) |>
-    purrr::map_df(stringr::str_replace_all, "\\.", "") # remover pontos das observações
+    purrr::map_df(stringr::str_replace_all, "\\.", "")
 
   DBI::dbDisconnect(database)
 

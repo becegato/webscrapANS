@@ -1,41 +1,21 @@
-#### criação de base para página de beneficiários do tabnet ####
+# --------------------------------------------------- #
+# --- BASE PARA PÁGINA DE BENEFICIÁRIOS DO TABNET --- #
+# --------------------------------------------------- #
 
 # bibliotecas e funções ---------------------------------------------------
 
-source("R/bibliotecas.R")
-source("R/funcoes.R")
+source("R/0_libraries.R")
+source("R/0_functions.R")
 
 # pasta da base sqlite ----------------------------------------------------
 
-if (fs::dir_exists("tags/") == F) {
+if (!fs::dir_exists("tags/")) {
   fs::dir_create("tags/")
 } else {
   fs::dir_delete("tags/")
 
   fs::dir_create("tags/")
 }
-
-# teste de inclusão automática de strings ---------------------------------
-
-#' Tags encontradas no site do tabnet da ANS:
-#' <http://www.ans.gov.br/anstabnet/cgi-bin/dh?dados/tabnet_br.def>
-#' <https://stackoverflow.com/questions/32833894/r-rvest-is-not-proper-utf-8-indicate-encoding>
-
-# match de tags
-
-# html |>
-#   rvest::html_elements("#L") |>
-#   paste0() |>
-#   stringr::str_extract_all(regex('value=\"(.*?)\"')) |>
-#   purrr::map_df(as_tibble, "x") |>
-#   purrr::map_df(
-#     stringr::str_replace_all,
-#     regex('value=\\\"'), ""
-#   ) |>
-#   purrr::map_df(
-#     stringr::str_replace_all,
-#     regex('\\\"'), ""
-#   )
 
 # beneficiários por UF ----------------------------------------------------
 
@@ -72,7 +52,7 @@ elements <- list(
   ),
   estado = tibble::tibble(
     x = "SUF=",
-    tag = c("TODAS_AS_CATEGORIAS__", paste0(1:29)), # "29", "28"
+    tag = c("TODAS_AS_CATEGORIAS__", paste0(1:29)),
     y = "&",
     tipo = "benef_uf"
   ),
@@ -88,8 +68,8 @@ html <- rvest::read_html("http://www.ans.gov.br/anstabnet/cgi-bin/dh?dados/tabne
 
 vars <- list(
   a = elements,
-  b = c("#L", "#C", "#I", "#S9", "#S4", "#S10", "#S11"), # css da página
-  c = c("linha", "coluna", "conteudo", "modalidade", "tipo_contratacao", "uf", "regiao") # nome das tabelas da base de consulta
+  b = c("#L", "#C", "#I", "#S9", "#S4", "#S10", "#S11"),
+  c = c("linha", "coluna", "conteudo", "modalidade", "tipo_contratacao", "uf", "regiao")
 )
 
 purrr::pwalk(
@@ -140,7 +120,7 @@ elements <- list(
   ),
   estado = tibble::tibble(
     x = "SUF=",
-    tag = c("TODAS_AS_CATEGORIAS__", paste0(1:29)), # "29", "28"
+    tag = c("TODAS_AS_CATEGORIAS__", paste0(1:29)),
     y = "&",
     tipo = "benef_op"
   ),
@@ -156,8 +136,8 @@ html <- rvest::read_html("http://www.ans.gov.br/anstabnet/cgi-bin/dh?dados/tabne
 
 vars <- list(
   a = elements,
-  b = c("#L", "#C", "#I", "#S2", "#S3", "#S6", "#S5"), # css da página
-  c = c("linha", "coluna", "conteudo", "modalidade", "tipo_contratacao", "uf", "regiao") # nome das tabelas da base de consulta
+  b = c("#L", "#C", "#I", "#S2", "#S3", "#S6", "#S5"),
+  c = c("linha", "coluna", "conteudo", "modalidade", "tipo_contratacao", "uf", "regiao")
 )
 
 purrr::pwalk(
@@ -177,3 +157,6 @@ purrr::pwalk(
       writedb(c)
   }
 )
+
+rm(elements, html, vars)
+
