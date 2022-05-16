@@ -1,19 +1,19 @@
-# --------------- #
-# --- FUNÇÕES --- #
-# --------------- #
+# ----------------- #
+# --- FUNCTIONS --- #
+# ----------------- #
 
 # importação na base sqlite -----------------------------------------------
 
-writedb <- function(x, name) {
+write_db <- function(x, name, dir) {
   database <- DBI::dbConnect(
     RSQLite::SQLite(),
-    "tags/ans-tags.db"
+    glue::glue("{dir}/tags.db")
   )
 
   x <- x |>
     tidyr::unite("tag", c(x, tag, y), sep = "")
 
-  if (DBI::dbExistsTable(database, name) == F) {
+  if (!DBI::dbExistsTable(database, name)) {
     DBI::dbCreateTable(
       conn = database,
       name = name,
@@ -30,7 +30,7 @@ writedb <- function(x, name) {
     dplyr::group_by(tipo) |>
     dplyr::distinct(item, tag)
 
-  RSQLite::dbWriteTable(
+  DBI::dbWriteTable(
     conn = database,
     name = glue::glue("{name}"),
     value = x,
@@ -40,16 +40,14 @@ writedb <- function(x, name) {
   DBI::dbDisconnect(database)
 }
 
-# função com suporte a múltiplas consultas --------------------------------
+# função que habilita suporte a múltiplas consultas -----------------------
 
-query <- function(x, name, site) {
-  database <- DBI::dbConnect(RSQLite::SQLite(), "tags/ans-tags.db")
-
+multi_query <- function(x, name, site, db) {
   x <- x |>
     dplyr::as_tibble() |>
     dplyr::rename(item = value) |>
     dplyr::left_join(
-      database |>
+      db |>
         dplyr::tbl(paste0(name)) |>
         dplyr::collect() |>
         dplyr::filter(tipo == site),
@@ -64,7 +62,7 @@ query <- function(x, name, site) {
 
 # limpeza de tabelas ------------------------------------------------------
 
-clear <- function(x) {
+clear_html <- function(x) {
   x <- x |>
     rvest::html_text() |>
     stringi::stri_trans_general(id = "Latin-ASCII") |>
@@ -88,28 +86,33 @@ missing_args <- function(x) {
 
 # requisições do tabnet ---------------------------------------------------
 
-busca <- function(coluna = "Nao ativa",
-                  conteudo = "Assistencia Medica",
-                  linha = "Competencia",
-                  modalidade = NA,
-                  regiao = NA,
-                  tipo_contratacao = NA,
-                  uf = NA,
-                  site, ano, mes) {
-  database <- DBI::dbConnect(RSQLite::SQLite(), "tags/ans-tags.db")
+tabnet_request <- function(coluna = "Nao ativa",
+                           conteudo = "Assistencia Medica",
+                           linha = "Competencia",
+                           modalidade = NA,
+                           regiao = NA,
+                           tipo_contratacao = NA,
+                           uf = NA,
+                           sqlite = fs::dir_ls(tags_dir),
+                           search_type = "uf",
+                           years = 13:21,
+                           months = 12) {
+  site <- glue::glue("benef_{search_type}")
+
+  db <- DBI::dbConnect(RSQLite::SQLite(), sqlite)
 
   if (site == "benef_op") {
-    pagina <- "Arquivos=tb_cc_"
+    page <- "Arquivos=tb_cc_"
 
     tabnet_ans <- "http://www.ans.gov.br/anstabnet/cgi-bin/tabnet?dados/tabnet_cc.def"
 
-    requisicao <- "{tags[3]}{tags[1]}{tags[2]}{tags[8]}SRaz%E3o_Social=TODAS_AS_CATEGORIAS__&{tags[4]}{tags[6]}SFaixa_de_Benef=TODAS_AS_CATEGORIAS__&{tags[5]}{tags[7]}SCapital=TODAS_AS_CATEGORIAS__&SInterior=TODAS_AS_CATEGORIAS__&SReg.Metropolitana=TODAS_AS_CATEGORIAS__&formato=table&mostre=Mostra"
+    request <- "{tags[3]}{tags[1]}{tags[2]}{period}SRaz%E3o_Social=TODAS_AS_CATEGORIAS__&{tags[4]}{tags[6]}SFaixa_de_Benef=TODAS_AS_CATEGORIAS__&{tags[5]}{tags[7]}SCapital=TODAS_AS_CATEGORIAS__&SInterior=TODAS_AS_CATEGORIAS__&SReg.Metropolitana=TODAS_AS_CATEGORIAS__&formato=table&mostre=Mostra"
   } else {
-    pagina <- "Arquivos=tb_br_"
+    page <- "Arquivos=tb_br_"
 
     tabnet_ans <- "http://www.ans.gov.br/anstabnet/cgi-bin/tabnet?dados/tabnet_br.def"
 
-    requisicao <- "{tags[3]}{tags[1]}{tags[2]}{tags[8]}SRaz%E3o_Social=TODAS_AS_CATEGORIAS__&{tags[4]}{tags[6]}SFaixa_de_Benef=TODAS_AS_CATEGORIAS__&{tags[5]}{tags[7]}SCapital=TODAS_AS_CATEGORIAS__&SInterior=TODAS_AS_CATEGORIAS__&SReg.Metropolitana=TODAS_AS_CATEGORIAS__&formato=table&mostre=Mostra"
+    request <- "{tags[3]}{tags[1]}{tags[2]}{period}SRaz%E3o_Social=TODAS_AS_CATEGORIAS__&{tags[4]}{tags[6]}SFaixa_de_Benef=TODAS_AS_CATEGORIAS__&{tags[5]}{tags[7]}SCapital=TODAS_AS_CATEGORIAS__&SInterior=TODAS_AS_CATEGORIAS__&SReg.Metropolitana=TODAS_AS_CATEGORIAS__&formato=table&mostre=Mostra"
   }
 
   tags <- tibble::tibble(
@@ -126,35 +129,22 @@ busca <- function(coluna = "Nao ativa",
       tags = purrr::map2_chr(
         .x = vars,
         .y = names,
-        ~ query(.x, .y, site)
-      )
-    ) |>
-    dplyr::bind_rows(
-      tibble::tibble(
-        names = "periodo",
-        vars = NA,
-        tags = ano |>
-          dplyr::as_tibble() |>
-          dplyr::mutate(
-            x = pagina,
-            y = ".dbf&",
-            z = mes,
-            value = as.character(value)
-          ) |>
-          tidyr::unite("periodo", c(x, value, z, y), sep = "") |>
-          purrr::flatten_chr() |>
-          stringr::str_flatten()
+        ~ multi_query(.x, .y, site, db)
       )
     ) |>
     dplyr::select(tags) |>
     purrr::flatten_chr()
 
-  requisicao <- glue::glue(requisicao)
+  period <- purrr::map(months, ~ glue::glue("{page}{years}{.x}.dbf&")) |>
+    purrr::flatten_chr() |>
+    stringr::str_flatten()
+
+  request <- glue::glue(request)
 
   tab_site <- httr::POST(
     url = tabnet_ans,
-    body = requisicao,
-    timeout(20)
+    body = request,
+    httr::timeout(20)
   ) |>
     httr::content(encoding = "latin1", as = "parsed") |>
     rvest::html_node("table") |>
@@ -162,24 +152,59 @@ busca <- function(coluna = "Nao ativa",
     tibble::as_tibble() |>
     tidyr::separate_rows(value, sep = "\n")
 
-  n <- 1 + tab_site |>
-    dplyr::slice(1) |>
-    dplyr::pull() |>
-    stringr::str_count(pattern = "\t")
+  if (!is.na(tab_site[[1]][[1]])) {
+    n <- tab_site |>
+      dplyr::slice(1) |>
+      dplyr::pull() |>
+      stringr::str_count(pattern = "\t")
 
-  tab_site <- tab_site |>
-    tidyr::separate(
-      col = value,
-      sep = "\t",
-      into = paste0(
-        "x",
-        1:n
-      )
-    ) |>
-    janitor::row_to_names(row_number = 1) |>
-    purrr::map_df(stringr::str_replace_all, "\\.", "")
+    tab_site <- tab_site |>
+      tidyr::separate(
+        col = value,
+        sep = "\t",
+        into = paste0(
+          "x",
+          seq_len(n + 1)
+        )
+      ) |>
+      janitor::row_to_names(row_number = 1) |>
+      purrr::map_df(stringr::str_replace_all, "\\.", "") |>
+      janitor::clean_names()
 
-  DBI::dbDisconnect(database)
+    if ("operadora" %in% names(tab_site)) {
+      tab_site <- tab_site |>
+        dplyr::filter(operadora != "TOTAL") |>
+        tidyr::separate(
+          col = operadora,
+          into = c("registro", "operadora"),
+          sep = "-",
+          extra = "merge"
+        ) |>
+        dplyr::mutate(registro = as.numeric(registro))
+    }
 
-  return(tab_site)
+    DBI::dbDisconnect(database)
+
+    return(tab_site)
+  } else {
+    return(cat("Busca má especificada ou não suportada pelo tabnet."))
+  }
+}
+
+# funções de consulta de tabelas ------------------------------------------
+
+check_tables <- function(dir = tags_dir) {
+  DBI::dbConnect(RSQLite::SQLite(), fs::dir_ls(tags_dir)) |>
+    DBI::dbListTables()
+}
+
+check_requests <- function(site, table, dir = tags_dir) {
+  site <- glue::glue("benef_{site}")
+
+  db <- DBI::dbConnect(RSQLite::SQLite(), fs::dir_ls(tags_dir))
+
+  DBI::dbReadTable(db, table) |>
+    dplyr::filter(tipo == site) |>
+    dplyr::select(item) |>
+    dplyr::pull()
 }
