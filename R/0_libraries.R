@@ -1,6 +1,6 @@
-# ------------------- #
-# --- BIBLIOTECAS --- #
-# ------------------- #
+# ----------------- #
+# --- LIBRARIES --- #
+# ----------------- #
 
 if (!require("pacman")) {
   install.packages("pacman")
@@ -10,12 +10,12 @@ if (!require("pacman")) {
 pacman::p_load(
   rvest,
   httr,
-  usethis,
   janitor,
   tidyverse,
   RSQLite,
   styler,
   lintr,
   miniUI,
+  glue,
   install = FALSE
 )
