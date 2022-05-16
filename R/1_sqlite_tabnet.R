@@ -1,21 +1,14 @@
-# --------------------------------------------------- #
-# --- BASE PARA PÁGINA DE BENEFICIÁRIOS DO TABNET --- #
-# --------------------------------------------------- #
+# ------------------------------------------------ #
+# --- GERAÇÃO DE DATABSE DE CONSULTA NO TABNET --- #
+# ------------------------------------------------ #
 
-# bibliotecas e funções ---------------------------------------------------
+
+# bibliotecas, funções e variáveis ----------------------------------------
 
 source("R/0_libraries.R")
 source("R/0_functions.R")
 
-# pasta da base sqlite ----------------------------------------------------
-
-if (!fs::dir_exists("tags/")) {
-  fs::dir_create("tags/")
-} else {
-  fs::dir_delete("tags/")
-
-  fs::dir_create("tags/")
-}
+tags_dir <- fs::dir_create(glue::glue("{tempdir()}/tags"))
 
 # beneficiários por UF ----------------------------------------------------
 
@@ -67,21 +60,21 @@ elements <- list(
 html <- rvest::read_html("http://www.ans.gov.br/anstabnet/cgi-bin/dh?dados/tabnet_br.def")
 
 vars <- list(
-  a = elements,
-  b = c("#L", "#C", "#I", "#S9", "#S4", "#S10", "#S11"),
-  c = c("linha", "coluna", "conteudo", "modalidade", "tipo_contratacao", "uf", "regiao")
+  elements = elements,
+  css_selectors = c("#L", "#C", "#I", "#S9", "#S4", "#S10", "#S11"),
+  db_names = c("linha", "coluna", "conteudo", "modalidade", "tipo_contratacao", "uf", "regiao")
 )
 
 purrr::pwalk(
   .l = vars,
-  function(a, b, c) {
-    a |>
+  function(elements, css_selectors, db_names) {
+    elements |>
       dplyr::mutate(
         html |>
-          rvest::html_element(b) |>
-          clear()
+          rvest::html_element(css_selectors) |>
+          clear_html()
       ) |>
-      writedb(c)
+      write_db(name = db_names, dir = tags_dir)
   }
 )
 
@@ -135,28 +128,27 @@ elements <- list(
 html <- rvest::read_html("http://www.ans.gov.br/anstabnet/cgi-bin/dh?dados/tabnet_cc.def")
 
 vars <- list(
-  a = elements,
-  b = c("#L", "#C", "#I", "#S2", "#S3", "#S6", "#S5"),
-  c = c("linha", "coluna", "conteudo", "modalidade", "tipo_contratacao", "uf", "regiao")
+  elements = elements,
+  css_selectors = c("#L", "#C", "#I", "#S2", "#S3", "#S6", "#S5"),
+  db_names = c("linha", "coluna", "conteudo", "modalidade", "tipo_contratacao", "uf", "regiao")
 )
 
 purrr::pwalk(
   .l = vars,
-  function(a, b, c) {
-    a |>
+  function(elements, css_selectors, db_names) {
+    elements |>
       dplyr::mutate(
         html |>
-          rvest::html_element(b) |>
-          clear()
+          rvest::html_element(css_selectors) |>
+          clear_html()
       ) |>
       dplyr::mutate(item = dplyr::case_when(
         item == "Benef. Asst. Medica" ~ "Assistencia Medica",
         item == "Benef. Excl. Odont." ~ "Excl. Odontologico",
-        TRUE ~ as.character(item)
+        TRUE ~ item
       )) |>
-      writedb(c)
+      write_db(name = db_names, dir = tags_dir)
   }
 )
 
 rm(elements, html, vars)
-
