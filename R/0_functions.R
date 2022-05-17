@@ -183,7 +183,7 @@ tabnet_request <- function(coluna = "Nao ativa",
         dplyr::mutate(registro = as.numeric(registro))
     }
 
-    DBI::dbDisconnect(database)
+    DBI::dbDisconnect(db)
 
     return(tab_site)
   } else {
@@ -194,8 +194,13 @@ tabnet_request <- function(coluna = "Nao ativa",
 # funções de consulta de tabelas ------------------------------------------
 
 check_tables <- function(dir = tags_dir) {
-  DBI::dbConnect(RSQLite::SQLite(), fs::dir_ls(tags_dir)) |>
-    DBI::dbListTables()
+  db <- DBI::dbConnect(RSQLite::SQLite(), fs::dir_ls(tags_dir))
+
+  x <- DBI::dbListTables(db)
+
+  DBI::dbDisconnect(db)
+
+  return(x)
 }
 
 check_requests <- function(site, table, dir = tags_dir) {
@@ -203,8 +208,12 @@ check_requests <- function(site, table, dir = tags_dir) {
 
   db <- DBI::dbConnect(RSQLite::SQLite(), fs::dir_ls(tags_dir))
 
-  DBI::dbReadTable(db, table) |>
+  x <- DBI::dbReadTable(db, table) |>
     dplyr::filter(tipo == site) |>
     dplyr::select(item) |>
     dplyr::pull()
+
+  DBI::dbDisconnect(db)
+
+  return(x)
 }

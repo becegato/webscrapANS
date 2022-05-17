@@ -10,8 +10,6 @@ source("R/1_sqlite_tabnet.R")
 
 # requisicao --------------------------------------------------------------
 
-database <- DBI::dbConnect(RSQLite::SQLite(), fs::dir_ls(tags_dir))
-
 check_tables()
 
 check_requests(

@@ -17,5 +17,10 @@ pacman::p_load(
   lintr,
   miniUI,
   glue,
+  devtools,
+  roxygen2,
+  testthat,
+  knitr,
+  rstudioapi,
   install = FALSE
 )
