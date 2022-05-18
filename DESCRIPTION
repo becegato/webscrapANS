@@ -21,6 +21,7 @@ Imports:
     glue,
     httr,
     janitor,
+    parallel,
     pbapply,
     purrr,
     RSQLite,
