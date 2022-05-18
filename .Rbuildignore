@@ -1,0 +1,8 @@
+^renv$
+^renv\.lock$
+^webscrapANS\.Rproj$
+^\.Rproj\.user$
+^README\.md$
+^LICENSE\.md$
+^ex_requisicao\.R$
+^README\.Rmd$
