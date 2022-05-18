@@ -1,6 +1,6 @@
 Package: webscrapANS
 Title: Busca de informações de beneficiários e operadoras no TABNET ANS
-Version: 1.0.0
+Version: 1.0.1
 Authors@R: person(
     "Pedro", "Mendes", 
     email = "phrmendes@tuta.io", 
