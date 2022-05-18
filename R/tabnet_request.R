@@ -82,57 +82,84 @@ tabnet_request <- function(coluna = "Nao ativa",
     purrr::flatten_chr()
 
   period <- purrr::map(months, ~ glue::glue("{page}{years}{.x}.dbf&")) |>
-    purrr::flatten_chr() |>
-    stringr::str_flatten()
+    purrr::flatten_chr()
 
   request <- glue::glue(request)
 
-  tab_site <- httr::POST(
-    url = tabnet_ans,
-    body = request,
-    httr::timeout(20)
-  ) |>
-    httr::content(encoding = "latin1", as = "parsed") |>
-    rvest::html_node("table") |>
-    rvest::html_text2() |>
-    tibble::as_tibble() |>
-    tidyr::separate_rows(value, sep = "\n")
+  DBI::dbDisconnect(db)
 
-  if (!is.na(tab_site[[1]][[1]])) {
-    n <- tab_site |>
-      dplyr::slice(1) |>
-      dplyr::pull() |>
-      stringr::str_count(pattern = "\t")
-
-    tab_site <- tab_site |>
-      tidyr::separate(
-        col = value,
-        sep = "\t",
-        into = paste0(
-          "x",
-          seq_len(n + 1)
-        )
+  df <- pbapply::pblapply(
+    request,
+    function(i){
+      tab_site <- httr::POST(
+        url = tabnet_ans,
+        body = i,
+        httr::timeout(20)
       ) |>
-      janitor::row_to_names(row_number = 1) |>
-      purrr::map_df(stringr::str_replace_all, "\\.", "") |>
-      janitor::clean_names()
+        httr::content(encoding = "latin1", as = "parsed") |>
+        rvest::html_node("table") |>
+        rvest::html_text2() |>
+        tibble::as_tibble() |>
+        tidyr::separate_rows(value, sep = "\n")
 
-    if ("operadora" %in% names(tab_site)) {
-      tab_site <- tab_site |>
-        dplyr::filter(operadora != "TOTAL") |>
-        tidyr::separate(
-          col = operadora,
-          into = c("registro", "operadora"),
-          sep = "-",
-          extra = "merge"
-        ) |>
-        dplyr::mutate(registro = as.numeric(registro))
-    }
+      if (!is.na(tab_site[[1]][[1]])) {
+        n <- tab_site |>
+          dplyr::slice(1) |>
+          dplyr::pull() |>
+          stringr::str_count(pattern = "\t")
 
-    DBI::dbDisconnect(db)
+        tab_site <- tab_site |>
+          tidyr::separate(
+            col = value,
+            sep = "\t",
+            into = paste0(
+              "x",
+              seq_len(n + 1)
+            )
+          ) |>
+          janitor::row_to_names(row_number = 1) |>
+          purrr::map_df(stringr::str_replace_all, "\\.", "") |>
+          janitor::clean_names()
 
-    return(tab_site)
+        if ("operadora" %in% names(tab_site)) {
+          tab_site <- tab_site |>
+            dplyr::filter(operadora != "TOTAL") |>
+            tidyr::separate(
+              col = operadora,
+              into = c("registro", "operadora"),
+              sep = "-",
+              extra = "merge"
+            ) |>
+            dplyr::mutate(registro = as.numeric(registro))
+        }
+
+        return(tab_site)
+      } else {
+        return(FALSE)
+      }
+    },
+    cl = parallel::detectCores()
+  )
+
+  indexes <- purrr::map_dbl(
+    seq_len(length(df)),
+    ~ ifelse(
+      tibble::is_tibble(df[[.x]]),
+      .x,
+      0
+    )
+  )
+
+  if (sum(indexes) != 0) {
+    df <- purrr::map(
+      indexes[indexes != 0],
+      ~ df[[.x]]
+    ) |>
+      dplyr::bind_rows()
+
+    return(df)
   } else {
-    return(cat("Busca com erros ou sem suporte do TABNET ANS."))
+    return(cat("Falha na busca."))
   }
+
 }
