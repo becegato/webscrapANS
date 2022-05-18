@@ -154,8 +154,7 @@ tabnet_request <- function(coluna = "Nao ativa",
     df <- purrr::map(
       indexes[indexes != 0],
       ~ df[[.x]]
-    ) |>
-      dplyr::bind_rows()
+    )
 
     return(df)
   } else {
