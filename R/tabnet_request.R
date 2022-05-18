@@ -90,7 +90,7 @@ tabnet_request <- function(coluna = "Nao ativa",
 
   df <- pbapply::pblapply(
     request,
-    function(i){
+    function(i) {
       tab_site <- httr::POST(
         url = tabnet_ans,
         body = i,
@@ -161,5 +161,4 @@ tabnet_request <- function(coluna = "Nao ativa",
   } else {
     return(cat("Falha na busca."))
   }
-
 }
