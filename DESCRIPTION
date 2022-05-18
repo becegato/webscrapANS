@@ -1,0 +1,34 @@
+Package: webscrapANS
+Title: Busca de informações de beneficiários e operadoras no TABNET ANS
+Version: 0.0.0.9001
+Authors@R: person(
+    "Pedro", "Mendes", 
+    email = "phrmendes@tuta.io", 
+    role = c("aut", "cre")
+  )
+Description: Extração de dados do site ANS TABNET para os campos de Consultas -> Beneficiários -> UF, Região Metropolitana e Capital e Operadora. O pacote pega dados da página a partir de requisições e parsing, e os converte em tabelas limpas, prontas para análise.
+License: GPL (>= 3)
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.0
+Depends: R (>= 4.1.0)
+URL: https://github.com/phrmendes/webscrapANS
+Imports: 
+    DBI,
+    dbplyr,
+    dplyr,
+    fs,
+    glue,
+    httr,
+    janitor,
+    purrr,
+    RSQLite,
+    rvest,
+    stringi,
+    stringr,
+    tibble,
+    tidyr,
+    utils
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
