@@ -6,3 +6,4 @@
 ^LICENSE\.md$
 ^ex_requisicao\.R$
 ^README\.Rmd$
+^R/project_libraries\.R$
