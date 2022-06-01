@@ -37,7 +37,7 @@ write_db <- function(x, name, dir) {
     overwrite = T
   )
 
-  DBI::dbDisconnect(db)
+  DBI::dbDisconnect(db, shutdown = TRUE)
 }
 
 multi_query <- function(x, name, site, db) {

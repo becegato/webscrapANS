@@ -13,7 +13,7 @@ check_tables <- function(dir) {
 
   x <- DBI::dbListTables(db)
 
-  DBI::dbDisconnect(db)
+  DBI::dbDisconnect(db, shutdown = TRUE)
 
   return(x)
 }
@@ -40,7 +40,7 @@ check_requests <- function(search_type, table, dir) {
     dplyr::select(item) |>
     dplyr::pull()
 
-  DBI::dbDisconnect(db)
+  DBI::dbDisconnect(db, shutdown = TRUE)
 
   return(x)
 }

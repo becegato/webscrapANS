@@ -86,7 +86,7 @@ tabnet_request <- function(coluna = "Nao ativa",
 
   request <- glue::glue(request)
 
-  DBI::dbDisconnect(db)
+  DBI::dbDisconnect(db, shutdown = TRUE)
 
   df <- pbapply::pblapply(
     request,
