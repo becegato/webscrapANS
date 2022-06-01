@@ -2,6 +2,8 @@
 # webscrapANS
 
 <!-- badges: start -->
+
+[![R-CMD-check](https://github.com/phrmendes/webscrapANS/workflows/R-CMD-check/badge.svg)](https://github.com/phrmendes/webscrapANS/actions)
 <!-- badges: end -->
 
 Extração de dados do site [ANS
@@ -33,22 +35,23 @@ tbl <- webscrapANS::tabnet_request(
   coluna = "Competencia",
   conteudo = "Assistencia Medica",
   linha = "Operadora",
-  years = 20:21,
+  years = 21,
   months = 12,
   search_type = "op",
   sqlite_dir = tags_dir
 )
 
-head(tbl)
-#> # A tibble: 6 × 4
-#>   registro operadora                       dez_21  dez_20 
-#>      <dbl> <chr>                           <chr>   <chr>  
-#> 1      477 SOMPO SAÚDE SEGUROS SA          111582  90013  
-#> 2      515 ALLIANZ SAÚDE S/A               33834   36745  
-#> 3      582 PORTO SEGURO - SEGURO SAÚDE S/A 340714  269182 
-#> 4      701 UNIMED SEGUROS SAÚDE S/A        597977  533308 
-#> 5      884 ITAUSEG SAÚDE SA                8455    9065   
-#> 6     5711 BRADESCO SAÚDE SA               3309100 3267234
+head(tbl[[1]]) |> 
+  knitr::kable()
 ```
+
+| registro | operadora                       | dez_21  | total   |
+|---------:|:--------------------------------|:--------|:--------|
+|      477 | SOMPO SAÚDE SEGUROS SA          | 111582  | 111582  |
+|      515 | ALLIANZ SAÚDE S/A               | 33834   | 33834   |
+|      582 | PORTO SEGURO - SEGURO SAÚDE S/A | 340714  | 340714  |
+|      701 | UNIMED SEGUROS SAÚDE S/A        | 597977  | 597977  |
+|      884 | ITAUSEG SAÚDE SA                | 8455    | 8455    |
+|     5711 | BRADESCO SAÚDE SA               | 3309100 | 3309100 |
 
 <!-- devtools::build_readme() -->

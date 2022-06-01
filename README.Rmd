@@ -14,6 +14,7 @@ knitr::opts_chunk$set(
 # webscrapANS
 
 <!-- badges: start -->
+[![R-CMD-check](https://github.com/phrmendes/webscrapANS/workflows/R-CMD-check/badge.svg)](https://github.com/phrmendes/webscrapANS/actions)
 <!-- badges: end -->
 
 Extração de dados do site [ANS TABNET](http://www.ans.gov.br/anstabnet/index.htm) para os campos de Consultas -> Beneficiários -> UF, Região Metropolitana e Capital e Operadora. O pacote pega dados da página a partir de requisições e parsing, e os converte em tabelas limpas, prontas para análise.
@@ -31,7 +32,7 @@ devtools::install_github("phrmendes/webscrapANS")
 
 Obtendo número de beneficiários de operadoras no TABNET ANS:
 
-```{r exemplo}
+```{r exemplo, results = "asis"}
 library(webscrapANS)
 
 tags_dir <- webscrapANS::create_sqlite_tags()
@@ -40,13 +41,14 @@ tbl <- webscrapANS::tabnet_request(
   coluna = "Competencia",
   conteudo = "Assistencia Medica",
   linha = "Operadora",
-  years = 20:21,
+  years = 21,
   months = 12,
   search_type = "op",
   sqlite_dir = tags_dir
 )
 
-head(tbl)
+head(tbl[[1]]) |> 
+  knitr::kable()
 ```
 
 <!-- devtools::build_readme() -->
