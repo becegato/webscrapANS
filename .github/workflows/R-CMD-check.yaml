@@ -38,13 +38,14 @@ jobs:
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
 
+      - name: Install dependencies on Ubuntu
+        if: runner.os == 'Linux'
+        run: sudo apt install libcurl4-openssl-dev libssl-dev libxml2-dev
+        shell: bash
+
       - uses: r-lib/actions/setup-r-dependencies@v1
         with:
           extra-packages: rcmdcheck
 
       - uses: r-lib/actions/check-r-package@v1
 
-      - name: Install dependencies on Ubuntu
-        if: matrix.os == 'ubuntu-latest'
-        run: sudo apt install libcurl4-openssl-dev libssl-dev libxml2-dev
-        shell: bash
