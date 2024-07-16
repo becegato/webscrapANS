@@ -19,7 +19,7 @@ Você pode instalar a versão de desenvolvimento de `webscrapANS` do
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("phrmendes/webscrapANS")
+devtools::install_github("llbecegato/webscrapANS")
 ```
 
 ## Exemplo
